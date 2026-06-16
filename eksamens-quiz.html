@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eksamensquiz · Never Another</title>
+<style>
+  :root{
+    --bg:#0e1014; --panel:#171a21; --panel2:#1f232c; --line:#2a2f3a;
+    --txt:#e9ecf1; --muted:#9aa3b2; --accent:#e8743b; --accent2:#4a86ff;
+    --green:#3fbf7f; --ps:#c084fc; --bd:#4ecdc4; --au:#ffb454; --app:#ff6b8b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.55;-webkit-font-smoothing:antialiased}
+  header{padding:26px 20px 10px;text-align:center}
+  header h1{margin:0;font-size:22px;letter-spacing:.3px}
+  header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .wrap{max-width:820px;margin:0 auto;padding:14px 16px 60px}
+
+  .cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+  .cat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;
+    transition:.15s;text-align:left;position:relative;overflow:hidden}
+  .cat:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .cat.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .cat .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px}
+  .cat h3{margin:0 0 6px;font-size:14px;display:flex;align-items:center}
+  .cat .meta{font-size:12px;color:var(--muted)}
+  .cat .bar{height:5px;border-radius:4px;background:var(--panel2);margin-top:10px;overflow:hidden}
+  .cat .bar > i{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 16px}
+  .toolbar .grow{flex:1}
+  button{font-family:inherit;font-size:13px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:9px 14px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .chip{font-size:11px;padding:5px 10px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);cursor:pointer}
+  .chip.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:8px;min-height:200px}
+  .tagrow{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+  .qnum{margin-left:auto;color:var(--muted);font-size:12px}
+  .qtext{font-size:19px;font-weight:600;margin:4px 0 18px}
+  .answer{border-top:1px dashed var(--line);padding-top:16px;color:#dfe5ee;font-size:15px;display:none}
+  .answer.show{display:block;animation:fade .25s}
+  .answer ul{margin:8px 0;padding-left:20px}
+  .answer li{margin:4px 0}
+  .answer code{background:#0b0d11;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:#ffd9a0}
+  .answer .lead{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .answer .ourapp{background:#12241c;border:1px solid #1f4d38;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:14px}
+  .answer .ourapp b{color:var(--green)}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .actions .grow{flex:1}
+  .empty{text-align:center;color:var(--muted);padding:40px 10px}
+  .empty h2{color:var(--txt)}
+  footer{text-align:center;color:var(--muted);font-size:11px;margin-top:24px}
+  .kbd{font-size:11px;color:var(--muted);text-align:center;margin-top:10px}
+  .kbd span{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:2px 6px;margin:0 2px}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎓 Eksamensquiz · Never Another</h1>
+  <p>Projektstyring · Brugerinddragelse &amp; Design · Applikationsudvikling — forankret i jeres opgave &amp; app</p>
+</header>
+
+<div class="wrap">
+  <div class="cats" id="cats"></div>
+
+  <div class="toolbar">
+    <span class="chip" id="chip-all">Bland alle fag</span>
+    <span class="chip" data-type="Uddyb">Uddyb</span>
+    <span class="chip" data-type="Perspektivér">Perspektivér</span>
+    <span class="chip" data-type="Kode">Kode</span>
+    <span class="grow"></span>
+    <button class="ghost" id="btn-save">💾 Gem til fil</button>
+    <button class="ghost" id="btn-load">📂 Hent fra fil</button>
+    <button class="ghost" id="btn-reset">↺ Nulstil</button>
+    <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+  </div>
+  <div id="saveHint" style="font-size:11px;color:var(--muted);margin:-8px 0 14px">
+    💡 Browseren husker normalt din fremgang automatisk. Vil du være <b>helt sikker</b> (fx i Chrome, eller dele med gruppen), så tryk <b>Gem til fil</b> og <b>Hent fra fil</b> næste gang.
+  </div>
+
+  <div id="quizArea">
+    <div class="card" id="card">
+      <div class="tagrow">
+        <span class="tag" id="catTag"></span>
+        <span class="tag" id="typeTag" style="background:#222936;color:#9aa3b2"></span>
+        <span class="qnum" id="qnum"></span>
+      </div>
+      <div class="qtext" id="qtext"></div>
+      <div class="answer" id="answer"></div>
+      <div class="actions">
+        <button class="primary grow" id="btn-reveal">Vis svar</button>
+        <button class="grow" id="btn-skip">Spring over →</button>
+        <button class="grow hidden" id="btn-known">✓ Den kan jeg — næste</button>
+      </div>
+    </div>
+    <div class="kbd">Genveje: <span>Mellemrum</span> vis svar · <span>→</span> spring over · <span>K</span> den kan jeg</div>
+  </div>
+
+  <div class="card empty hidden" id="emptyState">
+    <h2 id="emptyTitle">🎉 Færdig!</h2>
+    <p id="emptyMsg"></p>
+    <div class="actions" style="justify-content:center">
+      <button class="primary" id="btn-resetCat">Nulstil dette fag igen</button>
+    </div>
+  </div>
+
+  <footer>Fremgang gemmes lokalt i din browser (JSON i localStorage) og overlever genindlæsning. “Nulstil” bringer spørgsmål tilbage.</footer>
+</div>
+
+<script>
+/* =========================================================================
+   SPØRGSMÅL
+   cat: ps = Projektstyring · bd = Brugerinddragelse & Design
+        au = Applikationsudvikling (teori/Kotlin) · app = Opgaven & Appen
+   type: Definition · Uddyb · Perspektivér · Kode
+   ========================================================================= */
+const QUESTIONS = [
+
+/* ===================== PROJEKTSTYRING ===================== */
+{cat:"ps",type:"Uddyb",q:"Hvad er forskellen på <i>values</i> og <i>goals</i> i jeres Team Canvas?",a:`<div class='lead'>Kort</div>
+<b>Goals</b> = hvad teamet vil opnå (resultater/mål, fælles og individuelle). <b>Values</b> = hvad teamet står for undervejs — de bærende holdninger som tillid, kvalitet, ærlighed, humor.
+<ul><li>Goals er <i>retning</i> og kan måles/afkrydses. Values er <i>adfærd</i> og styrer hvordan I når målene.</li>
+<li>I Team Canvas ligger Purpose i midten (hvorfor), og rundt om: Goals, Values, Roles &amp; Skills, Rules &amp; Activities.</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> vi brugte Team Canvas ved opstart til at gøre forventninger eksplicitte og fordele roller efter faglige styrker. Vi fremhæver selv at klare aftaler fra dag ét gav et “trygt og konfliktfrit samarbejde”.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er en interessentanalyse, og hvornår bruger man den?",a:`En interessentanalyse kortlægger alle parter der påvirker eller påvirkes af projektet, så man kan målrette kommunikation og forventningsafstemme.
+<ul><li>Bruges <b>tidligt</b> (opstart/planlægning) og opdateres løbende.</li>
+<li>Resultatet placeres i en <b>interessentmatrix</b> langs to akser.</li>
+<li>Den hænger direkte sammen med <b>kommunikationsplanen</b>: hver interessent får en strategi for hvad/hvordan/hvornår der kommunikeres.</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> vi placerede bl.a. produktejerne (Never Another) som dem vi skulle “håndtere”, og brugte analysen til at vælge rette kommunikationskanaler og mindske uklarhed.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvilke to akser brugte I i jeres interessentmatrix, og hvad betyder placeringen?",a:`Vores to akser var <b>indflydelse på projektet</b> og <b>nødvendighed for projektet</b>.
+<ul><li>Høj indflydelse + høj nødvendighed → tæt styring/inddragelse (fx Never Another som produktejer).</li>
+<li>Lav/lav → hold blot orienteret.</li></ul>
+<div class='lead'>Perspektivér</div> En klassisk variant (Mendelow) bruger akserne <b>magt × interesse</b> med fire felter: <i>manage closely, keep satisfied, keep informed, monitor</i>. Pointen er den samme: ressourcer og kommunikation prioriteres efter placering.`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er en kommunikationsplan, og hvordan hænger den sammen med interessentanalysen?",a:`Kommunikationsplanen oversætter interessentanalysen til konkret handling: for hver interessent fastlægges <b>budskab/interesse (HVAD)</b>, <b>kanal (HVORDAN)</b> og <b>timing (HVORNÅR)</b>.
+<ul><li>Den bygger ovenpå matrixen — placeringen bestemmer hvor tæt og hvor ofte man kommunikerer.</li>
+<li>Formål: mindske fremtidig uklarhed og sikre at de rigtige får den rigtige info.</li></ul>`},
+
+{cat:"ps",type:"Perspektivér",q:"I fordelte roller efter faglige styrker. Hvordan kunne <b>Belbins 9 teamroller</b> have nuanceret rollefordelingen?",a:`Belbin beskriver 9 roller i 3 orienteringer:
+<ul><li><b>Menneske:</b> Koordinator, Formidler, Kontaktskaber</li>
+<li><b>Hjerne:</b> Idémand, Analysator, Specialist</li>
+<li><b>Handling:</b> Opstarter, Organisator, Afslutter</li></ul>
+Et “winning team” har alle 9 dækket; man har typisk 2-3 stærke roller og skal dyrke dem frem for at udjævne svagheder.
+<div class='ourapp'><b>Refleksion:</b> vi brugte ikke Belbin eller en personlighedstest — vi fordelte ud fra faglige præferencer. Belbin kunne have afsløret om vi fx manglede en “Afslutter” (kvalitetssikring/deadlines), hvilket passer med at vores tests kom for sent.</div>`},
+
+{cat:"ps",type:"Definition",q:"Hvad er et projekt (ifølge Kousholt), og hvad kendetegner det?",a:`Et projekt er en <b>midlertidig, unik engangsforeteelse</b> med et mål, begrænsede ressourcer og en deadline.
+<ul><li>Midlertidig organisation, tværfagligt</li>
+<li>Begrænsede ressourcer (tid, penge, folk)</li>
+<li>Risici/overraskelser</li>
+<li>Skaber forandring — og kan derfor møde modstand</li></ul>`},
+
+{cat:"ps",type:"Definition",q:"Hvad er jerntrekanten i projektledelse?",a:`Jerntrekanten er afvejningen mellem <b>tid</b>, <b>scope/omfang</b> og <b>omkostninger</b> — med <b>kvalitet</b> i midten.
+<ul><li>Ændrer man én side, påvirkes de andre (mindre tid → mindre scope eller flere ressourcer).</li>
+<li>Rundt om ligger desuden HR, indkøb, risiko og kommunikation.</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> da tiden var fast, styrede vi primært på scope (afgrænsede hvad der var udenfor) for at nå i mål i kvalitet.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er forskellen på PBS og WBS, og i hvilken rækkefølge lavede I dem?",a:`<b>PBS (Product Breakdown Structure)</b> nedbryder projektet i <i>produkter/leverancer</i> (final product → sub-product → sub-sub-product). <b>WBS (Work Breakdown Structure)</b> nedbryder i <i>aktiviteter/opgaver</i> (workstream → task → action).
+<ul><li>PBS = HVAD der skal leveres. WBS = HVORDAN/arbejdet der skal til.</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> vi lavede PBS <b>først</b> (alle leverancer på tværs af app, design, rapport i plenum), og byggede så WBS ovenpå med ansvarlig + tidsestimat pr. opgave, så vi kunne omfordele løbende.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er et målhierarki, og hvad var jeres øverste mål?",a:`Et målhierarki kobler det overordnede mål til underliggende delmål, så alle leverancer trækker i samme retning (“rød tråd”).
+<div class='ourapp'><b>Vores topmål:</b> “At lave et forbedret købsflow som øger konverteringsraten.” Underpunkter bidrog i sammenspil til dette. Vi brugte SMART til at gøre det målbart og koble succeskriterier til virksomhedsværdi.</div>`},
+
+{cat:"ps",type:"Definition",q:"Hvad står SMART for, og hvorfor bruge det på succeskriterier?",a:`<b>S</b>pecifikt, <b>M</b>ålbart, <b>A</b>ttraktivt/Accepteret, <b>R</b>ealistisk, <b>T</b>idsbestemt.
+<ul><li>Tvinger vage visioner over i konkrete, efterprøvelige mål.</li>
+<li>Gør det muligt at vurdere bagefter om projektet lykkedes.</li></ul>
+<div class='ourapp'><b>Brug:</b> vi operationaliserede visionen om højere konvertering til målbare succeskriterier knyttet til leverancerne.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er scope, og hvad afgrænsede I som værende <i>uden for</i> scope?",a:`Scope = projektets afgrænsning: hvad er med, og — lige så vigtigt — hvad er <b>ikke</b> med. At definere det udenfor scope forventningsafstemmer ambitioner.
+<div class='ourapp'><b>Uden for vores scope:</b> pris og produktion af produktet (kan vi ikke påvirke), måleusikkerhed, test på fysisk Android-telefon, test på færdig app, og et fuldendt købsflow med fx Apple Pay. App'en blev leveret som en <b>Proof-of-Concept</b>.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvordan lavede I risikoanalyse, og hvilken konkret beslutning kom der ud af den?",a:`Risikoanalyse: for hver risiko vurderes <b>sandsynlighed (1–5) × konsekvens (1–5)</b>, og man beskriver en handling — undgå, afbøde eller leve med risikoen.
+<div class='ourapp'><b>Vores største risiko:</b> brugertest og rekruttering af testpersoner. <b>Konkret konsekvens:</b> vi inddrog <b>6</b> testpersoner i den indledende tænke-højt-test (i stedet for 5) netop for at afbøde risikoen for at miste indsigter.</div>`},
+
+{cat:"ps",type:"Perspektivér",q:"Hvad er et Gantt-kort vs. et PERT-diagram med kritisk sti? Hvad brugte I?",a:`<b>Gantt:</b> tidsplan i bjælker — viser hvornår aktiviteter kører og overlapper. <b>PERT:</b> netværksdiagram der viser <i>afhængigheder</i> mellem aktiviteter. <b>Kritisk sti:</b> den længste vej gennem PERT = den korteste mulige projekttid; forsinkelser her forsinker hele projektet.
+<div class='ourapp'><b>Ærligt:</b> vi brugte primært Gantt (med uge 1 + uge 2/anden sprint) og PBS/WBS. PERT/kritisk sti nævnes, men vi uddybede det ikke i praksis — et godt sted at vise du forstår teorien: hvilke af vores opgaver lå reelt på den kritiske sti (fx prototype → brugertest → app-implementering)?</div>`},
+
+{cat:"ps",type:"Definition",q:"Hvad er milepæle, og hvilken vigtig milepæl havde I?",a:`Milepæle er vigtige deadlines/statuspunkter undervejs — de markerer at noget centralt er nået, men har ingen varighed selv.
+<div class='ourapp'><b>Vores milepæl:</b> midtvejspræsentationen, hvor retningen kunne fastlåses sammen med Never Another. I konklusionen erkender vi dog at kundepræsentationen lå <b>for sent</b> til at give brugbare indsigter.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er et retrospektiv / post-mortem, og hvad var jeres vigtigste læring?",a:`Et retrospektiv (under/efter forløbet) evaluerer <b>proces og samarbejde</b>: hvad gik godt, hvad kan forbedres. Post-mortem laves efter afslutning. Pre-mortem laves <i>før</i> (“forestil dig projektet fejlede — hvorfor?”).
+<div class='ourapp'><b>Vores key learnings:</b> automatiserede tests (JUnit) og kundepræsentation kom for sent; fremover vil vi prioritere kundeinddragelse og tests tidligere. Vigtigste læring var “gruppe- og arkitekturdisciplin, ikke Kotlin-syntaks”.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er en problemformulering, og hvordan brugte I underspørgsmål?",a:`Problemformuleringen er det centrale spørgsmål projektet besvarer; underspørgsmål (arbejdsspørgsmål) nedbryder det i håndterbare dele — ofte ét pr. fag.
+<div class='ourapp'><b>Vores hovedproblem:</b> “Hvordan kan Never Anothers mobile købsoplevelse optimeres i en udvidet målgruppe?” med underspørgsmål til design (barrierer + brand), projektstyring (scoping/risiko inden for tidsrammen) og applikationsudvikling (arkitektur- og datastrukturvalg).</div>`},
+
+{cat:"ps",type:"Perspektivér",q:"I havde arbejdsspørgsmål men ingen eksplicitte hypoteser. Hvad er en hypotese, og hvordan kunne I have brugt den?",a:`En hypotese er en <b>testbar antagelse</b>: “Vi tror at [ændring] vil føre til [effekt] for [bruger], målt ved [kriterium].”
+<ul><li>Den kobler sig til build-measure-learn: byg det mindste der kan af- eller bekræfte antagelsen.</li></ul>
+<div class='ourapp'><b>Eksempel vi kunne have stillet:</b> “Vi tror at valgfrihed mellem video- og billedvejledning reducerer friktion i måleflowet for 45-60-årige, målt på færre fejl/forvirring i brugertest 2.” — hvilket faktisk holdt stik.</div>`},
+
+{cat:"ps",type:"Definition",q:"Hvad er “How Might We” (HMW)-spørgsmål, og hvornår bruges de?",a:`HMW omformulerer problemer til åbne muligheder: “Hvordan kan vi…?” — bredt nok til mange løsninger, snævert nok til at fokusere. Bruges i idé-/sprintfasen efter problemudforskning.
+<div class='ourapp'><b>Vores HMW:</b> bl.a. “Hvordan kan vi få produktet til at appellere til den ældre målgruppe?” og “…skabe et sikkert og nemt købsflow hvor vi ikke taber brugeren undervejs?”</div>`},
+
+{cat:"ps",type:"Definition",q:"Hvad er dot-voting, og hvornår brugte I det?",a:`Dot-voting er en faciliteringsteknik hvor hver deltager har et fast antal stemmer (typisk 3) at placere på idéer — hurtig, demokratisk prioritering uden lange diskussioner.
+<div class='ourapp'><b>Brug:</b> vi brugte dot-voting til at vælge vindere fra Crazy 8 og solution sketches (fx visuelle købsflow-trin, packshot, kerneværdi-indramning).</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er konflikthåndtering, og hvordan forebyggede I konflikter?",a:`Konflikthåndtering dækker metoder til at tackle uenigheder konstruktivt. Bedst er at <b>forebygge</b> via klare aftaler.
+<div class='ourapp'><b>I vores projekt:</b> Team Canvas’ “rules &amp; activities” fastlagde spilleregler for kommunikation, beslutninger (konsensus, ellers afstemning) og håndtering af tidsskred — hvilket gav et konfliktfrit forløb. En model vi kunne nævne: trapning/optrapning, eller interessebaseret forhandling frem for positioner.</div>`},
+
+{cat:"ps",type:"Perspektivér",q:"Hvad er en kommunikationsmodel (afsender→modtager), og hvor kan kommunikation bryde sammen?",a:`Den klassiske model: <b>afsender → (indkodning) → budskab/kanal → (afkodning) → modtager</b>, med støj og feedback. Bruddet sker typisk i kodning/afkodning eller via støj (tekniske eller forståelsesmæssige forstyrrelser).
+<div class='ourapp'><b>Kobling:</b> vores kommunikationsplan vælger netop kanal pr. interessent for at reducere “støj” og fejltolkning.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvordan brugte I sprint-metoden (Knapp et al.) i jeres designforløb?",a:`Sprint-bogen leverede vores metodebatteri: 5-act interview, lightning demos, Crazy 8, solution sketches og dot-voting. Den klassiske 5-dages sprint er Map → Sketch → Decide → Prototype → Test.
+<div class='ourapp'><b>Vigtigt:</b> vi kørte et sprint-<i>inspireret</i> forløb (ikke en stram 5-dages sprint) inden for Double Diamond — vi brugte teknikkerne hvor de gav mening i discover/develop-faserne.</div>`},
+
+{cat:"ps",type:"Perspektivér",q:"Hvad er forskellen på Google Design Sprint og Double Diamond — og hvorfor valgte I Double Diamond som ramme?",a:`<b>Design Sprint</b> er et tidsboxet 5-dages format til hurtigt at teste én løsning. <b>Double Diamond</b> er en bredere procesramme: Discover → Define → Develop → Deliver (to diamanter: divergér/konvergér to gange).
+<div class='ourapp'><b>Hvorfor Double Diamond:</b> vores konverteringsproblem var uklart defineret. Discover-fasen afslørede at problemet også lå i målgruppe og produktkommunikation — ikke kun flowet. “Havde vi sprunget Discover over, havde vi nok kun forbedret købsflowet.”</div>`},
+
+{cat:"ps",type:"Definition",q:"Hvad er “Always Be Capturing” (ABC) og Flip to Action?",a:`<b>ABC</b> = indsaml løbende alle noter, problemer, citater og canvasses undervejs, så intet går tabt frem mod analyse/sprint. <b>Flip to Action</b> = omsæt indsigter til konkrete handlinger/næste skridt frem for at lade dem stå som observationer.`},
+
+{cat:"ps",type:"Perspektivér",q:"Hvad er en pre-mortem, og hvordan kunne den have hjulpet jer?",a:`En pre-mortem afholdes <i>før</i> projektet: man forestiller sig at det er slået fejl og brainstormer årsagerne, så man kan afbøde dem på forhånd.
+<div class='ourapp'><b>Kobling:</b> en pre-mortem havde sandsynligvis fanget vores to kendte svagheder tidligt — “tests laves for sent” og “kundepræsentation ligger for sent” — som ellers først kom frem i retrospektivet.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er ressourcestyring og budget i et projekt?",a:`Ressourcestyring handler om at planlægge og fordele de tilgængelige ressourcer: interne/eksterne/remote personer, udstyr, software og lokaler — inden for et budget/udgiftsstyring.
+<div class='ourapp'><b>I vores projekt:</b> ressourcerne var primært gruppens tid og kompetencer; budgettet var stramt (fx valgte vi 3D-visualisering fra, da det lå uden for vores niveau/ressourcer).</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er kvalitetssikring og målopfølgning i projektstyring (ikke kode)?",a:`Kvalitetssikring i projektstyring = løbende at sikre at leverancer lever op til succeskriterierne, og målopfølgning = at tjekke fremdrift mod mål/milepæle og justere.
+<div class='ourapp'><b>I vores projekt:</b> vi fulgte op via Gantt/milepæle og brugte midtvejspræsentationen som målepunkt. På produktsiden sikrede vi kvalitet via brugertest mellem prototyper (se også fagets app-spor).</div>`},
+
+{cat:"ps",type:"Perspektivér",q:"Hvad er en 5-sekunders test, og hvor i jeres proces kunne den passe?",a:`En 5-sekunders test måler <b>første indtryk</b>: brugeren ser et design i 5 sekunder, hvorefter man spørger hvad de husker/forstod. God til at teste klarhed af landing page og budskab.
+<div class='ourapp'><b>Kobling:</b> vores allerførste indsigt (“er det en pornoside eller en BH-side?”) er præcis et 5-sekunders-problem — en formel 5-sek-test på landing page kunne have kvantificeret den forvirring.</div>`},
+
+{cat:"ps",type:"Uddyb",q:"Hvad er forskellen på proces og produkt når man reflekterer over forbedringspotentiale?",a:`<b>Produkt</b> = selve leverancen (app/design): hvad kunne være bedre fagligt? <b>Proces</b> = hvordan I arbejdede: planlægning, samarbejde, tests, kommunikation.
+<div class='ourapp'><b>Vores eksempel:</b> produkt — UI-tests og “size guarantee” i flowet manglede; proces — tests og kundeinddragelse kom for sent. At skille de to ad viser modenhed til eksamen.</div>`},
+
+{cat:"ps",type:"Definition",q:"Hvad er en ekspertinterview, og hvad er faldgruben?",a:`Et ekspertinterview henter dyb viden fra en person med særlig indsigt (bruger eller fagperson). Faldgrube: <b>bias</b> hvis eksperten ikke er repræsentativ eller har relation til teamet.
+<div class='ourapp'><b>Vores tilfælde:</b> vi interviewede Anette (35, London), kusine til en skaber. Vi erkendte biasen og brugte derfor kun interviewet til at <i>understøtte</i> egne pointer, ikke som selvstændigt bevis.</div>`},
+
+{cat:"ps",type:"Perspektivér",q:"Hvad ville en kommunikationsplan have indeholdt for jeres tre vigtigste interessenter?",a:`For hver interessent: budskab (HVAD), kanal (HVORDAN), frekvens/timing (HVORNÅR).
+<div class='ourapp'><b>Eksempel:</b> <ul><li><b>Never Another (produktejer):</b> status + designvalg, møde/præsentation, ved milepæle.</li>
+<li><b>Testpersoner/målgruppe:</b> invitation + tak, mail/personligt, ved rekruttering og test.</li>
+<li><b>Vejleder/intern gruppe:</b> fremdrift + blokeringer, Slack/standup, løbende.</li></ul></div>`},
+
+/* ===================== BRUGERINDDRAGELSE & DESIGN ===================== */
+{cat:"bd",type:"Definition",q:"Hvad er forskellen på UX og UI?",a:`<b>UX (User Experience)</b> = brugerens samlede oplevelse: research, informationsarkitektur, lo-fi prototyper, brugertest. <b>UI (User Interface)</b> = det interaktive look &amp; feel: stil, komposition, farvepalette, typografi, knapper, hi-fi prototyper.
+<ul><li>UX er det <i>bagvedliggende</i> (struktur/flow), UI er <i>overfladen</i> (visuelt/interaktivt).</li>
+<li>Kerneidé i faget: en iterativ, brugerinddragende proces.</li></ul>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvordan har I brugt <i>genre</i> og <i>stil</i> (Kholmatova / Ida Engholm)?",a:`<b>Genre</b> = hvad noget <i>er</i> (funktionel klassifikation — fx e-commerce/webshop). <b>Stil</b> = hvordan det <i>ser ud</i> (æstetik: farve, typografi, stemning).
+<ul><li>Kholmatova: <b>functional patterns</b> hører til genren, <b>perceptual patterns</b> hører til stilen.</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> stilanalyse på tværs af SKIMS, ONLY og Instagram gav en <b>minimalistisk, kølig, neutral</b> stil: sort/hvid/grå palette med orange accent, sparsom animation, tydelige CTA-knapper og rene packshots. Funktionelle mønstre vi genbrugte: navigationsbar på tværs af sider, produktgrid, selvbetjent flow.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvordan udvalgte I jeres testpersoner?",a:`Via et <b>rekrutterings-/screeningsspørgeskema</b> (6 spørgsmål: navn, alder, køn, besvær med BH-størrelser, gener, villighed til at købe online), så vi ramte målgruppen. Rekruttering skete gennem venner/medstuderende/bekendte — men <b>den der rekrutterede måtte ikke selv være testperson</b> (mindsker bias).
+<div class='ourapp'><b>Konkret:</b> test 1 bl.a. Anni 68, Sarah 50, Lene 54, Dina 53, Emma 30; test 2 bl.a. Shira 32, Mille 25, Lene 54, Marianne 53, Josefine 28 — altså primært vores 45-60-måls­gruppe + nogle yngre.</div>`},
+
+{cat:"bd",type:"Perspektivér",q:"Hvorfor lavede I fulde personas og ikke en <b>lean/proto-persona</b> — og hvad ville proto-personaen gøre?",a:`<b>Proto-persona (Lean UX):</b> håndtegnet, hurtig, baseret på <i>antagelser</i> om behov/mål/adfærd frem for demografi — laves <b>før</b> man har data, og valideres senere. <b>Fuld persona:</b> mere udførlig, baseret på indsamlet research.
+<div class='ourapp'><b>Vores valg:</b> vi havde allerede desk research (Google Analytics), brugertest og ekspertinterview, så vi byggede to fulde personas (“Karen” = ældre/konservativ; “Martha” = yngre/karriere). En proto-persona ville have været nyttig <i>tidligere</i> — som hurtigt antagelses-udgangspunkt vi så kunne af-/bekræfte med test.</div>`},
+
+{cat:"bd",type:"Definition",q:"Hvad er en user role vs. en persona (Mike Cohn)?",a:`<b>User role</b> = en samling definerende attributter for en brugergruppe og deres tilsigtede interaktion med systemet (abstrakt). <b>Persona</b> = en konkret, imaginær repræsentation af en user role med navn, billede og beskrivelse.
+<ul><li>Role modeling-trin: brainstorm → organisér → konsolidér → forfin.</li></ul>`},
+
+{cat:"bd",type:"Perspektivér",q:"Hvad er <b>extreme characters</b>, og hvordan kunne de have hjulpet jeres design?",a:`Extreme characters er bevidst overdrevne personligheder (fx “den 85-årige der aldrig har brugt en app” eller “den ekstremt travle”), der presser designet og afslører oversete behov.
+<div class='ourapp'><b>Kobling:</b> for vores ældre målgruppe kunne en extreme character (“kender ikke swipe/moderne navigation”) have fanget vores prototype-1-fejl tidligere — vi “kopierede Instagram-flows til en ældre målgruppe” og måtte rette det.</div>`},
+
+{cat:"bd",type:"Definition",q:"Primære vs. sekundære data — og kvalitative vs. kvantitative?",a:`<b>Primære data:</b> indsamlet direkte til formålet (interviews, spørgeskemaer, observation, brugertest). <b>Sekundære data / desk research:</b> allerede indsamlet af andre til andet formål.
+<ul><li><b>Kvalitative</b> = ord/indsigt/hvorfor (interview, tænke-højt). <b>Kvantitative</b> = tal/hvor mange (analytics, Kano-%).</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> sekundært = Google Analytics fra Never Another; primært = tænke-højt-tests, ekspertinterview, Kano-tests.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvilke designprincipper anvendte I (kontrast, typografi, farver, komposition)?",a:`<ul><li><b>Kontrast:</b> tydelig adskillelse af objekt/baggrund — fx fremhævede CTA-knapper.</li>
+<li><b>Farver — 60-30-10-reglen:</b> 60% dominerende (neutral), 30% sekundær, 10% accent (vores orange).</li>
+<li><b>Typografi:</b> rene, læsbare skrifter passende til neutral stil.</li>
+<li><b>Komposition:</b> gittersystem, mellemrum, produktgrid.</li>
+<li><b>Gestaltprincipper:</b> nærhed/lighed grupperer indhold visuelt.</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> sort/hvid/grå base (60-30) + orange accent (10), og swipe-mekanik inspireret af SoMe.</div>`},
+
+{cat:"bd",type:"Definition",q:"Hvad er en style tile og et moodboard — og hvordan adskiller de sig?",a:`<b>Moodboard:</b> en samling af stemning/inspiration (billeder, farver, ord) der definerer en retning. Tre trin: definér nøgleord → saml/kuratér → forfin. <b>Style tile:</b> én side med de konkrete visuelle komponenter (farver, typografi, knapper) — broen mellem moodboard og UI.
+<div class='ourapp'><b>I vores projekt:</b> vores moodboard byggede på gruppens 4 individuelle moodboards; style tile’en indkapslede det i komponenter med få elementer fra Never Anothers eksisterende designdokument.</div>`},
+
+{cat:"bd",type:"Definition",q:"Hvad er informationsarkitektur (IA), og hvorfor er den ikke en del af UI?",a:`IA har to komponenter: (1) <b>identifikation/definition</b> af indhold og funktionalitet, og (2) <b>organisering/struktur</b> og forhold mellem indhold. Den ligger til <i>grund</i> for UX/UI og dokumenteres i lister/regneark/diagrammer — ikke wireframes.
+<ul><li>Organisatoriske systemer: sekventiel (trin-for-trin) og hierarkisk.</li></ul>
+<div class='ourapp'><b>Vores IA-skærme:</b> Hjem/landing, Udforsk (inspiration), Min BH/købsflow (måling), Profil, After Care.</div>`},
+
+{cat:"bd",type:"Perspektivér",q:"Hvad er card sorting (åben/lukket) og tree testing — kunne det have styrket jeres navigation?",a:`<b>Åben card sorting:</b> brugeren skaber og navngiver egne kategorier (afdækker mentale modeller). <b>Lukket:</b> sorterer i forudbestemte kategorier (validerer struktur). <b>Tree testing:</b> tester/redesigner en eksisterende IA — kan brugeren finde tingene i menustrukturen?
+<div class='ourapp'><b>Kobling:</b> vores After Care-begreb forvirrede alle (“Er After Care et firma?”). Card sorting/tree testing kunne have afsløret at navnet/placeringen ikke matchede brugernes mentale model — før vi byggede prototypen.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad er Lean UX, og hvad indeholder Lean UX Canvas (8 felter)?",a:`Lean UX (Gothelf &amp; Seiden): løs et reelt problem for reelle brugere frem for at lave pixel-perfekte specs — drevet af build-measure-learn. <b>Lean UX Canvas (8 felter):</b>
+<ul><li>1) Business Problem 2) Business Outcomes 3) Users &amp; Customers 4) User Benefits 5) Solution Ideas 6) Hypotheses 7) Vigtigst at lære først 8) Mindst muligt arbejde for at lære det.</li></ul>
+<div class='ourapp'><b>Kobling:</b> vores iterative MVP-tilgang (learnings fra test 1 → backlog → prototype 2) er ren Lean UX, selvom vi ikke udfyldte canvas’et formelt.</div>`},
+
+{cat:"bd",type:"Definition",q:"Hvad er en MVP, og hvad er build-measure-learn?",a:`<b>MVP (Minimum Viable Product):</b> det mindst mulige produkt der lader dig <i>lære/validere</i> en antagelse. <b>Build-measure-learn:</b> byg det mindste → mål brugernes reaktion → lær → gentag.
+<div class='ourapp'><b>I vores projekt:</b> Figma-prototyperne var vores MVP’er — vi byggede prototype 1, målte i brugertest, lærte (fx CTA + After Care-forvirring) og byggede prototype 2.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad er Kano-modellen, og hvad viste jeres Kano-tests?",a:`Kano klassificerer features: <b>Basale/Required</b> (forventes — skuffer hvis de mangler), <b>Performance</b> (mere er bedre), <b>Exciters/Attraktive</b> (begejstrer, men forventes ikke). Pointe: attraktive features bliver med tiden basale forventninger.
+<div class='ourapp'><b>Vores resultater:</b> uddybende produkttekst + ordrestatus = Performance/Required; After Care = Exciter (60%); målingsvideoer steg fra Exciter 60% → 80% mellem test 1 og 2 — netop Kanos pointe i praksis.</div>`},
+
+{cat:"bd",type:"Definition",q:"Hvad er MoSCoW-prioritering?",a:`MoSCoW prioriterer krav i fire: <b>Must have</b>, <b>Should have</b>, <b>Could have</b>, <b>Won't have</b>.
+<div class='ourapp'><b>I vores projekt:</b> vi brugte Must/Should/Could til at prioritere backlog mellem prototype 1 og 2, så vi byggede det vigtigste først.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad er five-act interviewet (de 5 akter)?",a:`Et struktureret brugertest-interview i 5 akter:
+<ul><li>1) Friendly welcome (tryg stemning)</li>
+<li>2) Context questions (discovery — baggrund)</li>
+<li>3) Introduce prototype</li>
+<li>4) Tasks (selve usability-testen)</li>
+<li>5) Debrief (opsamling)</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> både den indledende test på den originale hjemmeside og brugertest 1 &amp; 2 fulgte 5-act + tænke-højt, med testmanuskript pr. akt.</div>`},
+
+{cat:"bd",type:"Definition",q:"Hvad er en tænke-højt-test, og hvorfor er den værdifuld?",a:`Brugeren <b>verbaliserer sine tanker</b> mens de løser opgaver, så man hører <i>hvorfor</i> de gør som de gør — ikke kun hvad. Afslører forvirring, forventninger og friktion i realtid.
+<div class='ourapp'><b>Vores udbytte:</b> citater som “forestillede mig ikke en video” og “jeg mangler en tydelig knap til at gå videre” pegede direkte på konkrete designrettelser.</div>`},
+
+{cat:"bd",type:"Perspektivér",q:"Hvad er guerilla testing, og hvornår havde det været relevant for jer?",a:`Guerilla testing = hurtig, billig, bærbar test (fx på café/gade) i tidlige/lavbudget-faser — mange svar hurtigt, lavere præcision.
+<div class='ourapp'><b>Kobling:</b> til at validere et hurtigt spørgsmål som “forstår folk at det er en BH der sælges?” på landing page havde guerilla-test været hurtigere end vores planlagte 30-min-sessioner — men vores målgruppe (45-60) er sværere at ramme “på gaden”.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad indeholder en testplan (før/under/efter)?",a:`<ul><li><b>Før:</b> prototype klar, rekrutteringsscreener, rekruttér deltagere, interviewguide/manuskript, prøvegennemgang.</li>
+<li><b>Under:</b> ca. 5 brugere, optagelse, tænke-højt.</li>
+<li><b>Efter:</b> analysér indsigter (gruppér post-its → find mønstre → uddrag indsigter), opsummér anbefalinger.</li></ul>
+<div class='ourapp'><b>I vores projekt:</b> testplan + testmanuskript med 5 akter, 30 min pr. session, fysisk ansigt-til-ansigt på en iPhone 16 Pro med Figma-prototypen.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvorfor 5-6 testpersoner — hvad er argumentet?",a:`Ifølge Smith (2020) finder man ca. <b>80% af usability-udfordringerne efter 5 brugere</b> — flere giver hurtigt aftagende udbytte. Derfor er 5 et godt udgangspunkt.
+<div class='ourapp'><b>I vores projekt:</b> brugertest 1 og 2 byggede på 5-6 deltagere; den indledende test brugte 6 (den ekstra kom fra risikoanalysen, da rekruttering var vores største risiko).</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad er forskellen på lo-fi og hi-fi prototyper (Morten Rold-skellet)?",a:`<b>Lo-fi:</b> håndskitserede/simple wireframes, fokus på struktur og flow, billige og hurtige at ændre. <b>Hi-fi:</b> tæt på det færdige produkt — farver, typografi, interaktion. Man øger fidelity gradvist.
+<div class='ourapp'><b>I vores projekt:</b> final solution sketch = lo-fi; de to Figma-prototyper = hi-fi, som vi brugertestede.</div>`},
+
+{cat:"bd",type:"Definition",q:"Hvad er paper prototyping?",a:`Skitser af skærme på papir, hvor testlederen manuelt skifter “skærm” efter brugerens handlinger — ekstremt billigt og hurtigt til at teste flow tidligt, før noget bygges digitalt.`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad er lightning demos, og hvad fik I ud af dem?",a:`Lightning demos: hurtige gennemgange af eksisterende produkter/features for at “copy smart” — stjæle gode løsninger på tværs af brancher.
+<div class='ourapp'><b>Vores demos</b> (EYDA, Pull&amp;Bear, ONLY, Alo, SKIMS, Spotify, Duolingo, MitID) gav: kerneværdi-indramning (EYDA), SoMe-video (Pull&amp;Bear/ONLY), packshot (Alo/SKIMS), virtuelle flow-steps (Spotify/Duolingo/MitID), ekstern størrelsesguide (ONLY).</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad er Crazy 8 og solution sketches?",a:`<b>Crazy 8:</b> hver person skitserer 8 idéer på 8 minutter (1 pr. minut) — tvinger kvantitet og divergens. <b>Solution sketch:</b> én gennemarbejdet løsningsskitse pr. person, der så vurderes (fx via dot-voting/Art Museum/heatmap).
+<div class='ourapp'><b>Vores vindere:</b> visuelle købsflow-trin, scrollable inspirationsside, packshot, kerneværdi-indramning; 3D-model blev <i>fravalgt</i> som uden for vores niveau.</div>`},
+
+{cat:"bd",type:"Perspektivér",q:"Hvad er Three Lenses (desirability, feasibility, viability)?",a:`Tre linser til at vurdere en idé: <b>Desirability</b> (vil folk have det? — people lens), <b>Feasibility</b> (kan vi bygge det teknisk?), <b>Viability</b> (kan vi tjene penge/bæredygtigt?).
+<div class='ourapp'><b>Kobling:</b> 3D-visualiseringen fejlede på <i>feasibility</i> (uden for vores niveau). Købsflow-forbedringen scorede højt på desirability (brugertest) og viability (konvertering).</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad var jeres vigtigste designindsigt mellem prototype 1 og 2?",a:`At vi havde “skudt os selv i foden” ved at kopiere Instagram-flows til en ældre målgruppe.
+<div class='ourapp'><b>Konkrete rettelser:</b> tydeligere CTA på landing (farve, ikke tekst), Udforsk leverede nu den info brugerne savnede, og købsflowet fik valgfrihed (“Ja/nej — har du målt før?”) + video/billede-alternativer. Tilbageværende friktion: <b>måleusikkerhed</b> (“hvad hvis jeg måler forkert”).</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad var jeres hovedanbefaling til Never Another efter brugertestene?",a:`At løse den tilbageværende friktion — <b>måleusikkerhed</b> — ved aktivt at integrere Never Anothers “size guarantee” i selve flowet, så brugeren tør gennemføre målingen.
+<div class='ourapp'><b>Forankring:</b> dette var det eneste store friktionspunkt tilbage i brugertest 2; resten (CTA, Udforsk, After Care, valgfrihed) var løst.</div>`},
+
+{cat:"bd",type:"Perspektivér",q:"Hvad er raster vs. vektor, og hvorfor matter det til app-grafik?",a:`<b>Raster/bitmap</b> (JPEG, PNG, GIF): opbygget af pixels — taber kvalitet ved opskalering. <b>Vektor</b> (SVG, EPS): matematiske kurver — uendeligt skalerbart, ideelt til ikoner/logoer på mange skærmstørrelser.
+<div class='ourapp'><b>Kobling:</b> til en app med mange skærmtætheder er vektor (fx ikoner) skarpest; packshots/fotos er nødvendigvis raster — komprimér lossy (JPEG) til fotos, lossless (PNG) hvor man skal bevare præcision/transparens.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad er en brugerrejse (user journey), og hvordan brugte I den?",a:`En brugerrejse kortlægger de trin/touchpoints en bruger gennemgår mod et mål, og hvor friktionen (“bumpene”) er.
+<div class='ourapp'><b>I vores projekt:</b> vi tegnede rejsen frem til færdigt køb og markerede de største bump — fundamentet for hvor vi satte designindsatsen ind (især købsflowet, hvor analytics viste at 60,3% faldt fra efter andet trin).</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvad afslørede jeres desk research (Google Analytics) om målgruppen?",a:`At Never Anothers <i>antagne</i> primærmålgruppe (25-34) ikke matchede de <i>faktiske</i> aktive brugere (45-54).
+<div class='ourapp'><b>Konsekvens:</b> vi redefinerede målgruppen — primær 45-60 år, sekundær 23-45 år, begge med atypiske kropsmål — fordi 45-60 havde størst købsevne og villighed til at betale 799 kr., hvor komfort vægter over udtryk.</div>`},
+
+{cat:"bd",type:"Perspektivér",q:"Hvad er functional vs. perceptual patterns (Kholmatova), og hvor ses de i jeres app?",a:`<b>Functional patterns:</b> genkommende funktionelle byggesten (navigation, knapper, lister) — hører til genren. <b>Perceptual patterns:</b> de visuelle/sansede greb (farve, form, rum, animation) — hører til stilen/brandet.
+<div class='ourapp'><b>I vores app:</b> functional = bund-navigationsbar på tværs af skærme (signalerer flere sider), produktgrid, flow-steps. Perceptual = den neutrale palette, orange accent og rolige udtryk.</div>`},
+
+{cat:"bd",type:"Uddyb",q:"Hvordan giver og modtager man faglig designkritik konstruktivt?",a:`Konstruktiv kritik er <b>specifik, begrundet og handlingsrettet</b> — knyttet til mål/brugerbehov, ikke smag. Teknikker: speed critique (hurtig, fokuseret feedback), Art Museum + heatmap (markér styrker/svagheder visuelt) før diskussion.
+<div class='ourapp'><b>I vores projekt:</b> vi brugte heatmap/dot-voting til at samle gruppens kritik objektivt, og vores egen refleksion (“vi kan ikke antage at brugeren kender moderne navigation”) er selvkritik forankret i testdata.</div>`},
+
+{cat:"bd",type:"Perspektivér",q:"Teknologiens muligheder og begrænsninger for UX — giv et eksempel fra jeres app.",a:`Designet skal respektere hvad platformen kan/ikke kan.
+<div class='ourapp'><b>Eksempel:</b> vi <i>ville</i> have 3D-visualisering og en info-modal i videoflowet, men fravalgte/udelod dem fordi det lå uden for vores tekniske niveau som PoC. Omvendt udnyttede vi at native Android (Compose) nemt kan afspille video/billede-vejledning og swipe-flow — en mulighed der direkte forbedrede UX for målingen.</div>`},
+
+/* ===================== APPLIKATIONSUDVIKLING (teori/Kotlin) ===================== */
+{cat:"au",type:"Definition",q:"Hvad er en Composable, og hvilke argumenter tager den typisk?",a:`En <code>@Composable</code> funktion beskriver et stykke UI deklarativt — den <i>emitter</i> UI ud fra sin input-state frem for at manipulere views imperativt.
+<ul><li>Tager typisk <b>data/state</b> (fx en tekst, en liste, en valgt farve), <b>callback-lambdaer</b> (fx <code>onClick</code>) og en <code>Modifier</code>.</li>
+<li>Markeres med <code>@Composable</code>; kan ses i Android Studio med <code>@Preview</code>.</li></ul>
+<div class='ourapp'><b>I vores app:</b> fx <code>HomeScreen(selectedColor, onToggleColor, onScreenClick)</code> — data ind, hændelser ud.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvordan håndterer man state i Compose UI (remember, mutableStateOf, recomposition)?",a:`State = data der kan ændre sig og påvirke UI.
+<ul><li><code>mutableStateOf(x)</code> laver en observerbar state-holder.</li>
+<li><code>remember{}</code> bevarer den på tværs af recompositions (men ikke konfigurationsændringer).</li>
+<li><b>Recomposition:</b> når state ændres, kører de Composables der læser den, igen og opdaterer UI.</li></ul>
+<div class='ourapp'><b>I vores app:</b> ViewModel-properties som <code>var selectedColor by mutableStateOf(...)</code> — ændres de, recomposes de skærme der bruger dem.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er state hoisting, og hvorfor gør man det?",a:`State hoisting = at <b>flytte state op</b> til en fælles forælder (eller ViewModel) og sende den <i>ned</i> som parameter sammen med callback-lambdaer op. Det gør child-composables <b>stateless</b> = mere genbrugelige og testbare (single source of truth).
+<div class='ourapp'><b>I vores app:</b> state holdes i NeverAnotherViewModel/FlowViewModel og hoistes til MainActivity, som sender fx <code>selectedColor</code> ned og <code>onClickWhite</code> op til at sætte den.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er MVVM, og hvad er ansvaret i hvert lag?",a:`<b>MVVM (Model-View-ViewModel)</b> adskiller ansvar:
+<ul><li><b>Model:</b> data og dens form (data classes, navigation-enums).</li>
+<li><b>View:</b> UI — Composable-skærme/komponenter, så “dum” som muligt.</li>
+<li><b>ViewModel:</b> holder UI-state og logik, binder Model og View, overlever konfigurationsændringer.</li></ul>
+<div class='ourapp'><b>I vores app:</b> tre ViewModels (app/flow/validering), View-skærme pr. feature, og model-mappe med data classes — mappestrukturen følger MVVM 1:1.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad betyder clean architecture og separation of concerns?",a:`<b>Separation of concerns:</b> hver del af koden har ét klart ansvar. <b>Clean architecture:</b> lagdeling med klare afhængigheder, så UI, logik og data kan ændres uafhængigt.
+<div class='ourapp'><b>I vores app:</b> vi holdt FlowViewModel (købsflow) adskilt fra NeverAnotherViewModel (global UI-state), fordi de hverken deler navigation eller data — netop separation of concerns.</div>`},
+
+{cat:"au",type:"Uddyb",q:"Hvordan navigerer man i en Compose-app? Nævn de tre entiteter.",a:`Med <b>Navigation Compose</b>:
+<ul><li><b>NavHost:</b> beholderen der definerer alle ruter og start-destination.</li>
+<li><b>NavController:</b> styrer navigationen (<code>navigate("route")</code>, <code>popBackStack()</code>).</li>
+<li><b>Backstack:</b> stakken af besøgte skærme — “tilbage” popper øverste.</li></ul>
+<div class='ourapp'><b>I vores app:</b> i MainActivity: <code>rememberNavController()</code>, <code>NavHost(startDestination="home-screen")</code>, hver skærm som <code>composable("route")</code>, og navigation via callback-lambdaer.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er en data class i Kotlin, og hvad indeholder den?",a:`En <code>data class</code> er en klasse beregnet til at <b>holde data</b>. Kotlin genererer automatisk <code>equals()</code>, <code>hashCode()</code>, <code>toString()</code>, <code>copy()</code> og <code>componentN()</code> ud fra konstruktørens properties.
+<ul><li>Properties deklareres i den primære konstruktør, typisk som <code>val</code> (immutable).</li></ul>
+<div class='ourapp'><b>I vores app:</b> <code>data class Question(val title: String, val answer: String)</code> — holder ét FAQ-spørgsmål med svar.</div>`},
+
+{cat:"au",type:"Uddyb",q:"Hvad er nullability i Kotlin (<code>?</code>, <code>?:</code>, <code>!!</code>, <code>toIntOrNull</code>)?",a:`Kotlin skelner null-sikkert mellem <code>String</code> (kan ikke være null) og <code>String?</code> (kan).
+<ul><li><code>?</code> markerer en nullable type.</li>
+<li><code>?:</code> (Elvis) giver en fallback hvis venstre side er null.</li>
+<li><code>!!</code> tvinger non-null (kaster NPE hvis null — undgå).</li>
+<li><code>toIntOrNull()</code> returnerer <code>Int?</code> — null hvis parsing fejler, i stedet for at kaste exception.</li></ul>
+<div class='ourapp'><b>I vores app:</b> <code>trimmedText.toIntOrNull() ?: return false</code> — hvis input ikke er et tal, returnér false uden try/catch.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er en lambda-funktion, og hvad er syntaksen?",a:`En lambda er en anonym funktion man kan sende rundt som værdi. Syntaks: <code>{ parametre -> krop }</code>, fx <code>{ x: Int -> x * 2 }</code>. Sidste udtryk er returværdien.
+<div class='ourapp'><b>I vores app:</b> callbacks som <code>onClick = { viewModel.toggleHomeBraColor() }</code> er lambdaer.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er en higher-order function og trailing lambda?",a:`En <b>higher-order function</b> tager en funktion som parameter og/eller returnerer en funktion (fx <code>forEach</code>, <code>map</code>, <code>filter</code>). <b>Trailing lambda:</b> når sidste parameter er en funktion, kan lambdaen flyttes uden for parentesen: <code>list.forEach { println(it) }</code>.
+<div class='ourapp'><b>I vores app:</b> Composables tager ofte en trailing content-lambda, og vi bruger <code>forEach</code> (O(N)) til at iterere lister.</div>`},
+
+{cat:"au",type:"Definition",q:"Nævn de 4 pillars of OOP og hvad de gør.",a:`<ul><li><b>Encapsulation:</b> skjul intern tilstand, eksponér via metoder/properties (access modifiers).</li>
+<li><b>Inheritance (arv):</b> en klasse arver egenskaber fra en anden (<code>open</code>/<code>: Parent()</code>).</li>
+<li><b>Polymorphism:</b> samme interface, forskellig opførsel (<code>override</code>).</li>
+<li><b>Abstraction:</b> skjul kompleksitet bag et simpelt interface.</li></ul>`},
+
+{cat:"au",type:"Uddyb",q:"Hvad er forskellen på state og behavior i et objekt?",a:`<b>State</b> = objektets data/egenskaber på et givet tidspunkt (attributter/properties). <b>Behavior</b> = hvad objektet kan gøre (metoder/funktioner).
+<div class='ourapp'><b>I vores app:</b> i FlowViewModel er <code>currentPage</code> og <code>upperCircumference</code> state; <code>nextFlow()</code> og <code>validateMeasurement()</code> er behavior.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er en constructor, og hvad er encapsulation med getter/setter?",a:`En <b>constructor</b> initialiserer et objekt — i Kotlin typisk den primære konstruktør i klassehovedet: <code>class Person(val name: String)</code>. <b>Encapsulation:</b> man styrer adgang til felter via <code>private</code> + getter/setter, så intern tilstand ikke ændres vilkårligt. Kotlin genererer getter/setter for properties automatisk.`},
+
+{cat:"au",type:"Definition",q:"Hvad er Big O, og hvorfor er det relevant?",a:`Big O beskriver hvordan en algoritmes tid/plads <b>vokser</b> med inputstørrelsen n — uafhængigt af hardware. Relevant for at vurdere skalerbarhed.
+<ul><li>Typiske: O(1) konstant, O(log n) logaritmisk, O(n) lineær, O(n log n), O(n²) kvadratisk.</li></ul>
+<div class='ourapp'><b>I vores app:</b> vores <code>forEach</code> over lister er O(n); app'en er relativt statisk uden tunge algoritmer.</div>`},
+
+{cat:"au",type:"Uddyb",q:"Hvad er lineær vs. binær søgning, og hvad er deres Big O?",a:`<b>Lineær søgning:</b> gennemgå elementer ét ad gangen — <b>O(n)</b>, virker på usorteret data. <b>Binær søgning:</b> halvér søgeområdet hver gang — <b>O(log n)</b>, men <i>kræver sorteret</i> data.
+<div class='lead'>Perspektivér</div> Med få, statiske lister (som i vores app) er lineær fint; binær søgning betaler sig først ved store, sorterede datasæt.`},
+
+{cat:"au",type:"Uddyb",q:"Nævn nogle sorteringsalgoritmer og deres Big O.",a:`<ul><li><b>Bubble/Insertion/Selection sort:</b> O(n²) — simple, men langsomme på store data.</li>
+<li><b>Merge sort:</b> O(n log n) — stabil, deler og fletter.</li>
+<li><b>Quick sort:</b> O(n log n) i snit, O(n²) worst case — pivot-baseret.</li></ul>
+Pointe: de hurtigste generelle sammenligningssorteringer er O(n log n).`},
+
+{cat:"au",type:"Perspektivér",q:"Nævn de mest brugte abstrakte datatyper — hvornår bruger man hvad?",a:`<ul><li><b>Liste/Array:</b> ordnet sekvens; array = fast størrelse, liste = dynamisk.</li>
+<li><b>Map/Dictionary:</b> nøgle→værdi, hurtige opslag O(1) i snit.</li>
+<li><b>Set:</b> unikke værdier, hurtig “findes-i”.</li>
+<li><b>Stack (LIFO) / Queue (FIFO):</b> rækkefølge-styret adgang.</li></ul>
+<div class='ourapp'><b>I vores app:</b> vi bruger <code>List</code> (fx <code>steps</code>) og <code>Set</code> (<code>stepsWithoutOverlay</code>) — set’et giver hurtigt “er dette step uden overlay?”.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er forskellen på Column og LazyColumn?",a:`<b>Column:</b> lægger alle children ud på én gang — fint til få, kendte elementer. <b>LazyColumn:</b> komponerer kun de synlige elementer (genbruger ved scroll) — nødvendig til lange/uendelige lister af hensyn til ydeevne.
+<div class='ourapp'><b>I vores app:</b> hjem-skærmen bruger en almindelig <code>Column</code> med <code>Modifier.verticalScroll</code> (få faste sektioner) — LazyColumn ville være valget hvis vi viste fx hundreder af produkter.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er <code>@Preview</code> og <code>Modifier</code> i Compose?",a:`<b><code>@Preview</code>:</b> annotation der lader Android Studio rendere en Composable i designvinduet uden at køre app'en. <b><code>Modifier</code>:</b> en kæde af UI-justeringer (størrelse, padding, baggrund, klik, scroll) der sendes til en Composable, fx <code>Modifier.padding(8.dp).fillMaxWidth()</code>.`},
+
+{cat:"au",type:"Definition",q:"Hvad er nedarvning (inheritance) og override i Kotlin?",a:`Klasser er <code>final</code> som standard; man markerer en klasse/metode <code>open</code> for at kunne arve/overskrive. En subklasse arver med <code>: Parent()</code> og kan <code>override</code> metoder for at give egen opførsel (polymorfi).`},
+
+{cat:"au",type:"Definition",q:"Hvad er access modifiers i Kotlin?",a:`Synlighedsniveauer der styrer encapsulation: <code>public</code> (standard, alle), <code>private</code> (kun i klassen/filen), <code>protected</code> (klasse + subklasser), <code>internal</code> (samme modul).
+<div class='ourapp'><b>I vores app:</b> fx <code>private val stepsWithoutOverlay</code> i FlowViewModel — implementeringsdetalje skjult udadtil.</div>`},
+
+{cat:"au",type:"Perspektivér",q:"Hvordan henter man data fra et API i Kotlin (Retrofit) — og brugte I det?",a:`<b>Retrofit</b> mapper et Kotlin-<code>interface</code> til HTTP-kald via annotationer (<code>@GET</code>, <code>@POST</code>, <code>@PUT</code>, <code>@DELETE</code>) og parser JSON ind i datamodeller. Kaldene laves asynkront (suspend-funktioner/coroutines).
+<div class='ourapp'><b>Ærligt:</b> vi bruger <b>ikke</b> Retrofit eller en ekstern database — app'en er en PoC med hardcodet/statisk data i ViewModel. Supabase nævnte vi kun som <i>eksempel</i> på en mulig backend. Til perspektivering: et reelt købsflow ville hente produkter/priser via Retrofit + et REST-API.</div>`},
+
+{cat:"au",type:"Perspektivér",q:"Hvad er asynkron kode/coroutines i Kotlin (suspend, scopes)?",a:`Coroutines kører langvarigt arbejde uden at blokere UI-tråden.
+<ul><li><code>suspend</code>-funktioner kan pauses/genoptages.</li>
+<li>Launches i en scope: <code>viewModelScope</code> (følger ViewModel-livscyklus), <code>lifecycleScope</code>, <code>GlobalScope</code> (undgå), generel <code>CoroutineScope</code>.</li>
+<li><code>runBlocking</code> blokerer — mest til test/main.</li></ul>
+<div class='ourapp'><b>Ærligt:</b> vi bruger ikke coroutines, da der ikke er netværk/IO i PoC'en — men ved API-kald ville vi launche i <code>viewModelScope</code> for at undgå at fryse UI.</div>`},
+
+{cat:"au",type:"Uddyb",q:"Hvad er forskellen på en unit test og en UI/instrumented test?",a:`<b>Unit test:</b> tester en lille isoleret enhed (en funktion/klasse) uden Android-framework — kører hurtigt på JVM. <b>UI/instrumented test:</b> kører på emulator/enhed, tester UI og samspil (klik, navigation, vist tekst) via Compose-testregler.
+<div class='ourapp'><b>I vores app:</b> unit test = <code>MeasurementViewModelTest</code> (valideringslogik). UI-test (i post-assignment) = <code>InstrumentedTest</code> der tjekker navbar, købsflow, karrusel og data­visning.</div>`},
+
+{cat:"au",type:"Uddyb",q:"Hvad er GitHub branching og en pull request — og hvorfor er det kvalitetssikring?",a:`<b>Branching:</b> arbejd på en feature-branch i stedet for direkte på <code>main</code>. <b>Pull request (PR):</b> en anmodning om at merge branchen ind, hvor andre kan <b>code-reviewe</b> før merge.
+<ul><li>Kvalitetssikring: mindst ét andet øjenpar fanger fejl, og main holdes stabil.</li></ul>
+<div class='ourapp'><b>I vores app:</b> 30 PRs (5.–27. maj 2026) på tværs af 4 medlemmer; direkte commits til main var ikke tilladt; hver PR = én afgrænset feature/refactor.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvad er <code>toString()</code> og hvorfor override man den?",a:`<code>toString()</code> giver objektets tekstrepræsentation. Man overskriver den for læsbar output (fx ved logning/debug). I en <code>data class</code> genereres en pæn <code>toString()</code> automatisk ud fra properties.`},
+
+{cat:"au",type:"Uddyb",q:"Hvad er en stateful vs. stateless composable?",a:`<b>Stateless:</b> holder ingen egen state — modtager alt som parametre og sender hændelser op (genbrugelig, testbar). <b>Stateful:</b> holder/ejer state internt (eller via ViewModel).
+<div class='ourapp'><b>I vores app:</b> hjem-skærmen er stort set stateless (kun <code>rememberScrollState()</code>); købsflowet (ordreScreen) er stateful og styrer via when-statements hvilket step der vises.</div>`},
+
+{cat:"au",type:"Perspektivér",q:"Hvad er <code>mutableStateListOf</code>, og hvornår ville I bruge det?",a:`<code>mutableStateListOf()</code> er en observerbar liste — Compose recomposes når elementer tilføjes/fjernes, ikke kun når hele referencen skiftes.
+<div class='ourapp'><b>Kobling:</b> vi bruger den ikke (vores lister er statiske), men en kurv/“tilføj flere mål”-funktion ville være en oplagt brug: tilføj item → UI opdaterer automatisk.</div>`},
+
+{cat:"au",type:"Definition",q:"Hvorfor bruge <code>val</code> frem for <code>var</code> i data classes?",a:`<code>val</code> = immutable (kan ikke gentildeles efter init); <code>var</code> = mutable. Immutabilitet gør data mere forudsigelig, trådsikker og lettere at ræsonnere om — derfor god praksis for data classes.
+<div class='ourapp'><b>I vores app:</b> <code>data class Question(val title, val answer)</code> — værdierne ændres ikke efter oprettelse.</div>`},
+
+/* ===================== OPGAVEN & APPEN (Never Another) ===================== */
+{cat:"app",type:"Kode",q:"I jeres MeasurementsViewModel valideres øvre brystmål med <code>parsedValue in 77..113</code>. Forklar linjen <code>val parsedValue: Int = trimmedText.toIntOrNull() ?: return false</code>.",a:`<ul><li><code>trimmedText.toIntOrNull()</code> forsøger at parse strengen til <code>Int</code> og returnerer <code>Int?</code> — <b>null</b> hvis det ikke er et helt tal (bogstaver, kommatal, tomt, “2 0”).</li>
+<li><code>?:</code> (Elvis) siger: er resultatet null, så <code>return false</code> med det samme.</li>
+<li>Ellers gemmes heltallet i <code>parsedValue: Int</code>, og vi tjekker om det ligger i <code>77..113</code>.</li></ul>
+<div class='ourapp'><b>Pointe:</b> én linje håndterer både “ikke et tal” og giver en sikker non-null Int videre — uden try/catch.</div>`},
+
+{cat:"app",type:"Kode",q:"Hvorfor valgte I <code>Int</code> til målene — og hvad er ulemperne ved det?",a:`<b>Fordel:</b> <code>toIntOrNull()</code> afviser automatisk kommatal og ikke-numerisk input, så vi kun får hele cm-værdier i et realistisk interval (fx 77–113).
+<div class='lead'>Ulemper / hvorfor Int kan være dårlig her</div>
+<ul><li>Ingen decimaler — en bruger der måler 90,5 cm afvises eller afrundes, hvilket kan give upræcis BH-størrelse.</li>
+<li>Måleusikkerhed (vores kendte friktionspunkt) bliver værre uden decimaler.</li></ul>
+<b>Alternativ:</b> <code>Double</code>/<code>Float</code> (eller <code>BigDecimal</code> for præcision) ville tillade halve centimeter. Vi prioriterede simpel, robust validering i en PoC.`},
+
+{cat:"app",type:"Kode",q:"Hvad er <code>data class Question(val title: String, val answer: String)</code>, og hvor bruges den?",a:`Det er en data class der modellerer ét FAQ-spørgsmål: en titel og et svar, begge <code>val</code> (immutable).
+<ul><li>Kotlin genererer <code>equals/hashCode/toString/copy</code> automatisk.</li></ul>
+<div class='ourapp'><b>I vores app:</b> bruges af <code>questionlist</code> og vises på FAQ-skærmen via <code>QuestionStyle</code>. Det adskiller data (model) fra visning (view) — ren MVVM.</div>`},
+
+{cat:"app",type:"Kode",q:"I har tre ViewModels. Hvad laver hver, og hvorfor er de adskilt?",a:`<ul><li><b>NeverAnotherViewModel:</b> global UI-state — valgt fane (Home/Explore/MyBra/Profile), valgt profil-underside, Explore-karrusel-index og BH-farve.</li>
+<li><b>FlowViewModel:</b> hele købsflowet — currentPage, overlay, video/tekst-flow, måle-værdier og step-mapping.</li>
+<li><b>MeasurementsViewModel:</b> ren valideringslogik for de fire mål.</li></ul>
+<div class='ourapp'><b>Hvorfor adskilt:</b> separation of concerns — de deler hverken navigation eller state, så ændringer ét sted ikke smitter af. (MeasurementsViewModel hed oprindeligt TestingViewModel, omdøbt i PR 30.)</div>`},
+
+{cat:"app",type:"Kode",q:"Vis hvordan I hoister state i koden — fx farvevalg på Explore.",a:`I MainActivity ligger state i ViewModel og sendes ned, mens hændelser sendes op:
+<ul><li>Ned: <code>selectedColor = viewModel.selectedColor</code>, <code>listOfCardCarrouselPictures = viewModel.selectedCarouselPictures</code>.</li>
+<li>Op: <code>onClickWhite = { viewModel.selectColor(BraColor.White) }</code>.</li></ul>
+<code>selectColor()</code> sætter både <code>selectedColor</code> og skifter billedlisten → recomposition. <b>ExploreScreen er dermed stateless</b> og ved intet om hvor staten bor.`},
+
+{cat:"app",type:"Kode",q:"Hvordan navigerer jeres app konkret? (NavHost/NavController/Screen)",a:`I MainActivity: <code>val navController = rememberNavController()</code> og <code>NavHost(startDestination = "home-screen")</code> med en <code>composable("...")</code> pr. skærm.
+<ul><li>Klik i bund-navigationen kalder en lambda der både sætter <code>viewModel.selectedScreen</code> og <code>navController.navigate("route")</code>.</li>
+<li>Vi har en <code>enum class Screen { Home, Explore, MyBra, Profile }</code> — et <code>when(screen)</code> mapper enum → rute.</li></ul>
+<div class='ourapp'><b>Tre entiteter:</b> NavHost (rutekort), NavController (udfører navigation), backstack (tilbage-historik).</div>`},
+
+{cat:"app",type:"Kode",q:"Forklar <code>currentStepHasMedia</code> og brugen af et <code>Set</code> i FlowViewModel.",a:`<code>stepsWithoutOverlay</code> er et <code>setOf(Flow.Intro, Flow.CheckSizes, Flow.OrdreConfirmed)</code>.
+<code>currentStepHasMedia</code> er en computed property: <code>currentStep !in stepsWithoutOverlay</code>.
+<ul><li>Et <b>Set</b> giver hurtig (O(1) i snit) “er dette step undtaget?”-tjek.</li>
+<li>Computed property (get) betyder værdien altid er afledt af <code>currentPage</code> — ingen risiko for at den kommer ud af sync.</li></ul>
+<div class='ourapp'><b>Effekt:</b> subscreens slipper for selv at slå op om de skal vise video/billede.</div>`},
+
+{cat:"app",type:"Kode",q:"Hvad gør <code>validateMeasurement(inputText, minValue, maxValue): String?</code> i FlowViewModel, og hvorfor returnerer den en <code>String?</code>?",a:`Den validerer ét målinput og returnerer enten en <b>fejlbesked</b> eller den gyldige værdi:
+<ul><li>Tom streng → "Udfyld feltet"</li>
+<li><code>toIntOrNull() ?: return "Skal være et tal"</code></li>
+<li>Uden for interval → "Skal være mellem $minValue og $maxValue"</li>
+<li>Ellers returnér inputtet.</li></ul>
+<b>Hvorfor <code>String?</code>:</b> den kan beskrive forskellige udfald som tekst til UI. <div class='ourapp'><b>Bemærk:</b> denne metode (lavet til Android-test) overlapper med MeasurementsViewModels Boolean-funktioner — et godt sted at diskutere DRY/oprydning ved eksamen.</div>`},
+
+{cat:"app",type:"Uddyb",q:"Hvad var jeres tre niveauer af kvalitetssikring i app-udviklingen?",a:`<ul><li><b>1) Inputvalidering + unit tests</b> af valideringslogikken (forhindrer fejldata).</li>
+<li><b>2) Code review via pull requests</b> på GitHub (forhindrer fejlkode).</li>
+<li><b>3) Ekstern brugertest</b> af 2. prototype, 5 deltagere (forhindrer fejlløsninger).</li></ul>
+<div class='ourapp'><b>Formel:</b> “validering forhindrer fejldata, code reviews forhindrer fejlkode, og brugertest forhindrer fejlløsninger.”</div>`},
+
+{cat:"app",type:"Kode",q:"Hvad dækker jeres unit test <code>MeasurementViewModelTest</code>, og hvilke input-kategorier testede I?",a:`Den tester alle fire valideringsfunktioner med <code>assertEquals</code>:
+<ul><li>Gyldige værdier i interval (fx "100").</li>
+<li>Eksakte grænseværdier (fx "77" og "113").</li>
+<li>Gyldig værdi med mellemrum som <code>.trim()</code> fanger (" 80 ").</li>
+<li>Ugyldige: under/over interval, negative ("-1"), bogstaver ("Hej"), specialtegn ("//."), og mellemrum <i>inde</i> i tallet ("2 0").</li></ul>
+<div class='ourapp'><b>Pointe:</b> vi tester både happy path, grænser og edge cases — det er stærk testdesign at vise til eksamen.</div>`},
+
+{cat:"app",type:"Kode",q:"Hvad var jeres post-assignment, og hvilke UI-tests tilføjede I?",a:`Post-assignmentet var at supplere den manglende UI-/instrumented-testdækning (vores erkendte svaghed). Vi tilføjede Compose-UI-tests med <code>createComposeRule()</code>:
+<ul><li><b>navbarDisplaysAllItemsAndTriggersCallbacks</b> — klik på “Udforsk/Bestil/Profil” trigger korrekt Screen-callback.</li>
+<li><b>purchaseFlowSelectionTriggersCorrectFlow</b> — “NEJ” starter videoflow, “JA” starter tekstflow.</li>
+<li><b>homeCarouselToggleColorCallbackIsTriggered</b> — klik på “Switch Color” trigger toggle.</li>
+<li><b>orderStatusBackButtonTriggersCallback</b> — “Gå tilbage” trigger callback.</li>
+<li><b>measurementsDisplaysCorrectData</b> — at titler/værdier vises korrekt.</li></ul>
+<div class='ourapp'><b>Pointe:</b> vi gik fra kun unit-test til også at teste UI-adfærd og navigation.</div>`},
+
+{cat:"app",type:"Kode",q:"Forklar denne UI-test-linje: <code>onNodeWithText(\"NEJ\").performClick(); assertTrue(viewModel.videoFlowOnGoing)</code>.",a:`<ul><li><code>onNodeWithText("NEJ")</code> finder UI-elementet med teksten “NEJ” i den komponerede skærm.</li>
+<li><code>performClick()</code> simulerer et klik.</li>
+<li><code>assertTrue(viewModel.videoFlowOnGoing)</code> bekræfter at klikket satte flow-staten korrekt.</li></ul>
+<div class='ourapp'><b>Hvad det viser:</b> en UI-test verificerer <i>samspillet</i> mellem UI og ViewModel-state — ikke kun ren logik som en unit-test.</div>`},
+
+{cat:"app",type:"Uddyb",q:"Hvorfor er jeres app en Proof-of-Concept, og hvad blev ikke implementeret?",a:`En PoC demonstrerer at idéen/flowet virker — ikke et produktionsklart produkt.
+<div class='ourapp'><b>Bevidste afgrænsninger/udeladelser:</b> ingen ekstern database/betaling (Apple Pay uden for scope), 3D-visualisering fravalgt (feasibility), og info-knappen + modal fra prototype 2’s videoflow blev ikke bygget (ingen TimeLine-data eller modalState i FlowViewModel). App'en er en 1:1-oversættelse af prototype 2 til Android Studio.</div>`},
+
+{cat:"app",type:"Kode",q:"Hvordan styrer <code>currentStep</code> og <code>currentPage</code> hvilket trin brugeren ser?",a:`<code>currentPage</code> er en <code>mutableStateOf(0)</code>-indeks i listen <code>steps</code>. <code>currentStep</code> er en computed property: <code>get() = steps[currentPage]</code>.
+<ul><li><code>nextFlow()</code>/<code>lastFlow()</code> øger/sænker <code>currentPage</code> → recomposition → ny skærm.</li>
+<li><code>onContinueClicked()</code>: hvis steppet er uden overlay → <code>nextFlow()</code>, ellers åbn overlay.</li></ul>
+<div class='ourapp'><b>Fordel:</b> ét tal (currentPage) er “single source of truth” for hvor i flowet vi er.</div>`},
+
+{cat:"app",type:"Perspektivér",q:"Jeres måle-data lever kun i FlowViewModel-state og forsvinder ved app-luk. Hvordan ville I gøre dem persistente?",a:`Muligheder:
+<ul><li><b>Lokalt:</b> Room (SQLite-ORM) eller DataStore til at gemme målene på enheden.</li>
+<li><b>Skyen:</b> et REST-API via Retrofit, eller Supabase/Firebase som backend.</li></ul>
+<div class='ourapp'><b>Forankring:</b> i PoC'en er værdierne hardcodede/in-memory (fx <code>var upperCircumference by mutableStateOf("0")</code>). Til et rigtigt køb skulle de bindes til en ordre i en database — hvilket også kobler til vores arbejdsspørgsmål om “datastrukturvalg der understøtter flertrins-flowet”.</div>`},
+
+{cat:"app",type:"Kode",q:"Hvordan virker farve-toggle og den “uendelige” karrusel i NeverAnotherViewModel?",a:`<ul><li><b>Farve:</b> <code>selectColor(color)</code> sætter <code>selectedColor</code> og skifter <code>selectedCarouselPictures</code> til hvid/sort billedliste via et <code>when</code>.</li>
+<li><b>Karrusel:</b> <code>carrouselForwardButtonClick()</code> øger index, men <i>wrapper</i> til 0 når man er på sidste element (og baglæns til sidste fra 0) — så den føles uendelig.</li></ul>
+<div class='ourapp'><b>Pointe:</b> al denne logik ligger i ViewModel (ikke i UI) — så View blot reagerer på state.</div>`},
+
+{cat:"app",type:"Uddyb",q:"Hvordan hænger jeres arkitektur (3 fag) sammen i ét projekt?",a:`<div class='ourapp'><b>Den røde tråd:</b>
+<ul><li><b>Projektstyring</b> scopede problemet (udvidet målgruppe) og styrede tid/risiko, så vi nåede en PoC.</li>
+<li><b>Design</b> fandt via Double Diamond at problemet var målgruppe + flow, og leverede den testede prototype 2.</li>
+<li><b>Applikationsudvikling</b> oversatte prototype 2 til en MVVM-app med valideret måleflow, navigation og tests.</li></ul>
+Alt samles i hovedproblemet: optimering af den mobile købsoplevelse for en udvidet målgruppe.</div>`},
+
+{cat:"app",type:"Perspektivér",q:"Hvis I skulle videreudvikle app'en fagligt, hvad ville I gøre — og hvilke pensumemner trækker det på?",a:`<div class='ourapp'><ul><li><b>Persistens + backend:</b> Room/Retrofit/Supabase + coroutines (asynkron datahentning).</li>
+<li><b>Bedre måling:</b> <code>Double</code> i stedet for <code>Int</code> + integrér “size guarantee” (designanbefaling).</li>
+<li><b>Fuld testdækning:</b> flere UI-tests af hele navigations-/købsflowet.</li>
+<li><b>Liste-ydeevne:</b> LazyColumn hvis produktkatalog vokser.</li>
+<li><b>Tidligere kundeinddragelse + pre-mortem</b> (projektstyrings-læring).</li></ul></div>`},
+
+{cat:"app",type:"Kode",q:"Hvad er <code>data class MeasurementItem(val title, val value, val icon)</code>, og hvorfor adskilt fra <code>InfoItem</code>?",a:`<code>MeasurementItem</code> bruges af <code>YourMeasurement</code> til kropsmål (øvre/nedre bryst, spænd, højde); <code>InfoItem</code> bruges af personlige oplysninger (navn, adresse, email). De har <i>samme</i> struktur (title, value, ImageVector-icon).
+<div class='ourapp'><b>Hvorfor to klasser:</b> for at gøre det <b>tydeligt hvad de bruges til</b> (læsbarhed/semantik), selvom man teknisk kunne genbruge én. Et fint sted at diskutere afvejningen mellem DRY og domæne-klarhed.</div>`},
+
+{cat:"app",type:"Uddyb",q:"Hvordan brugte I AI i projektet — og hvordan afgrænsede I det?",a:`AI blev bevidst <b>begrænset</b>: brugt til rapportstruktur, oversættelse og til at <i>forstå</i> programmeringskoncepter — ikke til at skrive hele kodebasen.
+<div class='ourapp'><b>Dokumenteret:</b> faktiske prompts til Claude (MVVM story-flow med 8 slides, NavController/navbar), Gemini (tekstbanner) og ChatGPT (Compose card-modifiers) samt packshot-generering. Pointen: AI som læringsstøtte, ikke som erstatning for egen forståelse — vigtigt at kunne forklare al kode selv til eksamen.</div>`}
+
+];
+
+/* =========================================================================
+   APP-LOGIK
+   ========================================================================= */
+const CATS = {
+  ps:{name:"Projektstyring", color:"var(--ps)"},
+  bd:{name:"Brugerinddragelse & Design", color:"var(--bd)"},
+  au:{name:"Applikationsudvikling", color:"var(--au)"},
+  app:{name:"Opgaven & Appen", color:"var(--app)"}
+};
+const STORE_KEY = "naq_progress_v1";
+
+QUESTIONS.forEach((q,i)=>q.id = q.cat+"_"+i);
+
+let state = loadState();
+function loadState(){
+  try{ const s = JSON.parse(localStorage.getItem(STORE_KEY)); if(s&&s.done) return s; }catch(e){}
+  return {done:{}, cat:null, types:[], mixAll:false};
+}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+
+let current = null;
+
+const el = id => document.getElementById(id);
+
+function poolFor(cat){
+  return QUESTIONS.filter(q=>{
+    if(!state.mixAll && q.cat!==cat) return false;
+    if(state.types.length && !state.types.includes(q.type)) return false;
+    return true;
+  });
+}
+
+function renderCats(){
+  const c = el("cats"); c.innerHTML="";
+  Object.keys(CATS).forEach(k=>{
+    const total = QUESTIONS.filter(q=>q.cat===k).length;
+    const done = QUESTIONS.filter(q=>q.cat===k && state.done[q.id]).length;
+    const pct = total? Math.round(done/total*100):0;
+    const d = document.createElement("div");
+    d.className = "cat"+((!state.mixAll&&state.cat===k)?" active":"");
+    d.innerHTML = `<h3><span class="dot" style="background:${CATS[k].color}"></span>${CATS[k].name}</h3>
+      <div class="meta">${done}/${total} kan jeg · ${total-done} tilbage</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>`;
+    d.onclick = ()=>{ state.mixAll=false; state.cat=k; save(); renderAll(); next(); };
+    c.appendChild(d);
+  });
+  el("chip-all").classList.toggle("on", state.mixAll);
+  document.querySelectorAll(".chip[data-type]").forEach(ch=>{
+    ch.classList.toggle("on", state.types.includes(ch.dataset.type));
+  });
+}
+
+function next(){
+  if(!state.mixAll && !state.cat){ showPick(); return; }
+  const pool = state.mixAll
+      ? QUESTIONS.filter(q=>!state.types.length || state.types.includes(q.type))
+      : poolFor(state.cat);
+  const left = pool.filter(q=>!state.done[q.id]);
+  if(left.length===0){ showEmpty(pool.length); return; }
+  el("quizArea").classList.remove("hidden");
+  el("emptyState").classList.add("hidden");
+  current = left[Math.floor(Math.random()*left.length)];
+  renderCard(left.length, pool.length);
+}
+
+function renderCard(left,total){
+  const q = current;
+  el("catTag").textContent = CATS[q.cat].name;
+  el("catTag").style.background = CATS[q.cat].color;
+  el("catTag").style.color = "#10131a";
+  el("typeTag").textContent = q.type;
+  el("qnum").textContent = `${total-left+1} / ${total} · ${left} tilbage`;
+  el("qtext").innerHTML = q.q;
+  el("answer").innerHTML = q.a;
+  el("answer").classList.remove("show");
+  el("btn-reveal").classList.remove("hidden");
+  el("btn-known").classList.add("hidden");
+}
+
+function reveal(){
+  el("answer").classList.add("show");
+  el("btn-reveal").classList.add("hidden");
+  el("btn-known").classList.remove("hidden");
+}
+function markKnown(){
+  if(current){ state.done[current.id]=true; save(); renderCats(); next(); }
+}
+function skip(){ next(); }
+
+function showPick(){
+  el("quizArea").classList.add("hidden");
+  el("emptyState").classList.remove("hidden");
+  el("emptyTitle").textContent = "👋 Vælg et fag for at starte";
+  el("emptyMsg").textContent = "Klik på et af kortene ovenfor — eller “Bland alle fag” for at quizze på tværs.";
+  el("btn-resetCat").classList.add("hidden");
+}
+function showEmpty(total){
+  el("quizArea").classList.add("hidden");
+  el("emptyState").classList.remove("hidden");
+  el("btn-resetCat").classList.remove("hidden");
+  el("emptyTitle").textContent = "🎉 Alle taget!";
+  const label = state.mixAll? "på tværs af alle fag" : ("i "+CATS[state.cat].name);
+  el("emptyMsg").textContent = `Du har markeret alle ${total} spørgsmål ${label} som “den kan jeg”. Nulstil for at tage dem igen.`;
+}
+
+function resetAll(){
+  if(confirm("Nulstil ALT fremgang? Alle spørgsmål kommer tilbage i alle fag.")){
+    state.done={}; save(); renderCats(); next();
+  }
+}
+function resetCat(){
+  const keys = state.mixAll ? QUESTIONS.map(q=>q.id)
+      : QUESTIONS.filter(q=>q.cat===state.cat).map(q=>q.id);
+  keys.forEach(k=>delete state.done[k]);
+  save(); renderCats(); next();
+}
+
+function renderAll(){ renderCats(); }
+
+// ---- Fil-baseret lagring (overlever refresh, genåbning og browserskift) ----
+function exportProgress(){
+  const data = {app:"never-another-quiz", version:1, savedAt:new Date().toISOString(),
+                done:state.done, cat:state.cat, types:state.types, mixAll:state.mixAll};
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "quiz-fremgang.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+}
+function importProgress(file){
+  const r = new FileReader();
+  r.onload = e=>{
+    try{
+      const d = JSON.parse(e.target.result);
+      if(!d || typeof d.done!=="object") throw 0;
+      state.done = d.done || {};
+      state.cat = d.cat || null;
+      state.types = Array.isArray(d.types)? d.types : [];
+      state.mixAll = !!d.mixAll;
+      save(); renderCats();
+      const n = Object.keys(state.done).length;
+      alert("Fremgang hentet ✔  "+n+" spørgsmål markeret som “den kan jeg”.");
+      next();
+    }catch(err){ alert("Kunne ikke læse filen. Vælg en quiz-fremgang.json gemt fra denne quiz."); }
+  };
+  r.readAsText(file);
+}
+
+// events
+el("btn-reveal").onclick = reveal;
+el("btn-known").onclick = markKnown;
+el("btn-skip").onclick = skip;
+el("btn-reset").onclick = resetAll;
+el("btn-resetCat").onclick = resetCat;
+el("btn-save").onclick = exportProgress;
+el("btn-load").onclick = ()=> el("fileInput").click();
+el("fileInput").onchange = e=>{ if(e.target.files[0]) importProgress(e.target.files[0]); e.target.value=""; };
+el("chip-all").onclick = ()=>{ state.mixAll=!state.mixAll; if(state.mixAll) state.cat=null; save(); renderAll(); next(); };
+document.querySelectorAll(".chip[data-type]").forEach(ch=>{
+  ch.onclick = ()=>{
+    const t=ch.dataset.type, i=state.types.indexOf(t);
+    if(i>=0) state.types.splice(i,1); else state.types.push(t);
+    save(); renderCats(); next();
+  };
+});
+document.addEventListener("keydown", e=>{
+  if(el("quizArea").classList.contains("hidden")) return;
+  if(e.code==="Space"){ e.preventDefault(); if(el("answer").classList.contains("show")) markKnown(); else reveal(); }
+  else if(e.code==="ArrowRight"){ e.preventDefault(); skip(); }
+  else if(e.key==="k"||e.key==="K"){ e.preventDefault(); markKnown(); }
+});
+
+// init
+renderCats();
+if(state.mixAll || state.cat) next(); else showPick();
+</script>
+</body>
+</html>
