@@ -472,108 +472,96 @@ Pointe: de hurtigste generelle sammenligningssorteringer er O(n log n).`},
 <div class='ourapp'><b>I vores app:</b> <code>data class Question(val title, val answer)</code> — værdierne ændres ikke efter oprettelse.</div>`},
 
 /* ===================== OPGAVEN & APPEN (Never Another) ===================== */
-{cat:"app",type:"Kode",q:"I jeres MeasurementsViewModel valideres øvre brystmål med <code>parsedValue in 77..113</code>. Forklar linjen <code>val parsedValue: Int = trimmedText.toIntOrNull() ?: return false</code>.",a:`<ul><li><code>trimmedText.toIntOrNull()</code> forsøger at parse strengen til <code>Int</code> og returnerer <code>Int?</code> — <b>null</b> hvis det ikke er et helt tal (bogstaver, kommatal, tomt, “2 0”).</li>
-<li><code>?:</code> (Elvis) siger: er resultatet null, så <code>return false</code> med det samme.</li>
-<li>Ellers gemmes heltallet i <code>parsedValue: Int</code>, og vi tjekker om det ligger i <code>77..113</code>.</li></ul>
-<div class='ourapp'><b>Pointe:</b> én linje håndterer både “ikke et tal” og giver en sikker non-null Int videre — uden try/catch.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvordan kommer MVVM til udtryk i jeres app — overordnet?",a:`Vi delte koden i tre lag, så ansvar er adskilt:
+<ul><li><b>Model:</b> data og dens form (fx data classes og navigations-typer).</li>
+<li><b>View:</b> Composable-skærme der kun viser UI og sender brugerhandlinger videre.</li>
+<li><b>ViewModel:</b> holder UI-state og logik, og binder Model og View sammen.</li></ul>
+<div class='ourapp'><b>I vores app:</b> mappestrukturen følger MVVM, og al state/logik (fx hvilket flow-trin man er på, valgt farve) ligger i ViewModels — ikke i selve UI'et. Pointen til eksamen: kunne forklare <i>hvorfor</i> opdelingen gør koden lettere at ændre og teste.</div>`},
 
-{cat:"app",type:"Kode",q:"Hvorfor valgte I <code>Int</code> til målene — og hvad er ulemperne ved det?",a:`<b>Fordel:</b> <code>toIntOrNull()</code> afviser automatisk kommatal og ikke-numerisk input, så vi kun får hele cm-værdier i et realistisk interval (fx 77–113).
-<div class='lead'>Ulemper / hvorfor Int kan være dårlig her</div>
-<ul><li>Ingen decimaler — en bruger der måler 90,5 cm afvises eller afrundes, hvilket kan give upræcis BH-størrelse.</li>
-<li>Måleusikkerhed (vores kendte friktionspunkt) bliver værre uden decimaler.</li></ul>
-<b>Alternativ:</b> <code>Double</code>/<code>Float</code> (eller <code>BigDecimal</code> for præcision) ville tillade halve centimeter. Vi prioriterede simpel, robust validering i en PoC.`},
+{cat:"app",type:"Uddyb",q:"Hvordan håndterede I input/validering i måleflowet — og hvorfor?",a:`Brugeren indtaster fire kropsmål, og hver indtastning valideres før den accepteres:
+<ul><li>Vi fjerner mellemrum, forsøger at læse værdien som et tal, og afviser hvis det ikke er et tal.</li>
+<li>Vi tjekker at tallet ligger i et <b>realistisk interval</b> (fx baseret på hvad produktionen kan).</li></ul>
+<div class='ourapp'><b>Hvorfor:</b> det forhindrer fejldata (urealistiske eller forkerte mål) i at gå videre til en ordre. Begrebet er <i>inputvalidering</i> — og vi understøttede det med automatiserede tests.</div>`},
 
-{cat:"app",type:"Kode",q:"Hvad er <code>data class Question(val title: String, val answer: String)</code>, og hvor bruges den?",a:`Det er en data class der modellerer ét FAQ-spørgsmål: en titel og et svar, begge <code>val</code> (immutable).
-<ul><li>Kotlin genererer <code>equals/hashCode/toString/copy</code> automatisk.</li></ul>
-<div class='ourapp'><b>I vores app:</b> bruges af <code>questionlist</code> og vises på FAQ-skærmen via <code>QuestionStyle</code>. Det adskiller data (model) fra visning (view) — ren MVVM.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvorfor valgte I datatypen Int til målene — og hvad er afvejningen?",a:`<b>Fordel ved heltal (Int):</b> det afviser automatisk kommatal og ikke-numerisk input, så vi kun får hele cm-værdier.
+<div class='lead'>Ulempen</div>
+<ul><li>Ingen decimaler — måler man 90,5 cm, kan det ikke rummes præcist.</li>
+<li>Det forværrer den måleusikkerhed der i forvejen var vores største friktionspunkt.</li></ul>
+<b>Alternativ:</b> et decimaltal (Double/Float) ville tillade halve centimeter. Vi prioriterede simpel, robust validering i en Proof-of-Concept — men kan forklare afvejningen.`},
 
-{cat:"app",type:"Kode",q:"I har tre ViewModels. Hvad laver hver, og hvorfor er de adskilt?",a:`<ul><li><b>NeverAnotherViewModel:</b> global UI-state — valgt fane (Home/Explore/MyBra/Profile), valgt profil-underside, Explore-karrusel-index og BH-farve.</li>
-<li><b>FlowViewModel:</b> hele købsflowet — currentPage, overlay, video/tekst-flow, måle-værdier og step-mapping.</li>
-<li><b>MeasurementsViewModel:</b> ren valideringslogik for de fire mål.</li></ul>
-<div class='ourapp'><b>Hvorfor adskilt:</b> separation of concerns — de deler hverken navigation eller state, så ændringer ét sted ikke smitter af. (MeasurementsViewModel hed oprindeligt TestingViewModel, omdøbt i PR 30.)</div>`},
+{cat:"app",type:"Uddyb",q:"Hvad er en data class, og hvordan brugte I den i appen?",a:`En data class er en klasse hvis formål er at <b>holde data</b> — Kotlin genererer selv standardfunktioner (sammenligning, tekstrepræsentation, kopiering).
+<div class='ourapp'><b>I vores app:</b> vi bruger data classes i Model-laget til fx FAQ-spørgsmål og visning af oplysninger/mål. Det adskiller <i>data</i> (Model) fra <i>visning</i> (View) — kernen i MVVM. Du behøver ikke huske felterne udenad, men forstå rollen.</div>`},
 
-{cat:"app",type:"Kode",q:"Vis hvordan I hoister state i koden — fx farvevalg på Explore.",a:`I MainActivity ligger state i ViewModel og sendes ned, mens hændelser sendes op:
-<ul><li>Ned: <code>selectedColor = viewModel.selectedColor</code>, <code>listOfCardCarrouselPictures = viewModel.selectedCarouselPictures</code>.</li>
-<li>Op: <code>onClickWhite = { viewModel.selectColor(BraColor.White) }</code>.</li></ul>
-<code>selectColor()</code> sætter både <code>selectedColor</code> og skifter billedlisten → recomposition. <b>ExploreScreen er dermed stateless</b> og ved intet om hvor staten bor.`},
+{cat:"app",type:"Uddyb",q:"Hvordan navigerer brugeren rundt i jeres app — overordnet?",a:`Vi bruger Navigation Compose med tre byggesten:
+<ul><li><b>NavHost:</b> definerer alle skærme/ruter og hvor man starter.</li>
+<li><b>NavController:</b> udfører selve navigationen (gå til skærm / gå tilbage).</li>
+<li><b>Backstack:</b> historikken af besøgte skærme, så "tilbage" virker.</li></ul>
+<div class='ourapp'><b>I vores app:</b> en bund-navigation skifter mellem hovedfanerne (Home, Explore, MyBra, Profile), og købsflowet har sine egne under-skærme. Forstå rollerne — ikke den eksakte kode.</div>`},
 
-{cat:"app",type:"Kode",q:"Hvordan navigerer jeres app konkret? (NavHost/NavController/Screen)",a:`I MainActivity: <code>val navController = rememberNavController()</code> og <code>NavHost(startDestination = "home-screen")</code> med en <code>composable("...")</code> pr. skærm.
-<ul><li>Klik i bund-navigationen kalder en lambda der både sætter <code>viewModel.selectedScreen</code> og <code>navController.navigate("route")</code>.</li>
-<li>Vi har en <code>enum class Screen { Home, Explore, MyBra, Profile }</code> — et <code>when(screen)</code> mapper enum → rute.</li></ul>
-<div class='ourapp'><b>Tre entiteter:</b> NavHost (rutekort), NavController (udfører navigation), backstack (tilbage-historik).</div>`},
+{cat:"app",type:"Uddyb",q:"Hvad betyder state og state hoisting i jeres app?",a:`<b>State</b> = data der kan ændre sig og påvirker UI (fx hvilket trin i flowet, valgt farve). Når state ændres, gentegnes UI (recomposition).
+<b>State hoisting</b> = at lægge state op i ViewModel/forælder og sende den ned til "dumme" skærme, der bare viser den og melder handlinger tilbage.
+<div class='ourapp'><b>I vores app:</b> staten bor i ViewModels, og skærmene er så vidt muligt stateless. Fordel: skærmene bliver genbrugelige og lettere at teste, og der er ét sted "sandheden" om state ligger.</div>`},
 
-{cat:"app",type:"Kode",q:"Forklar <code>currentStepHasMedia</code> og brugen af et <code>Set</code> i FlowViewModel.",a:`<code>stepsWithoutOverlay</code> er et <code>setOf(Flow.Intro, Flow.CheckSizes, Flow.OrdreConfirmed)</code>.
-<code>currentStepHasMedia</code> er en computed property: <code>currentStep !in stepsWithoutOverlay</code>.
-<ul><li>Et <b>Set</b> giver hurtig (O(1) i snit) “er dette step undtaget?”-tjek.</li>
-<li>Computed property (get) betyder værdien altid er afledt af <code>currentPage</code> — ingen risiko for at den kommer ud af sync.</li></ul>
-<div class='ourapp'><b>Effekt:</b> subscreens slipper for selv at slå op om de skal vise video/billede.</div>`},
-
-{cat:"app",type:"Kode",q:"Hvad gør <code>validateMeasurement(inputText, minValue, maxValue): String?</code> i FlowViewModel, og hvorfor returnerer den en <code>String?</code>?",a:`Den validerer ét målinput og returnerer enten en <b>fejlbesked</b> eller den gyldige værdi:
-<ul><li>Tom streng → "Udfyld feltet"</li>
-<li><code>toIntOrNull() ?: return "Skal være et tal"</code></li>
-<li>Uden for interval → "Skal være mellem $minValue og $maxValue"</li>
-<li>Ellers returnér inputtet.</li></ul>
-<b>Hvorfor <code>String?</code>:</b> den kan beskrive forskellige udfald som tekst til UI. <div class='ourapp'><b>Bemærk:</b> denne metode (lavet til Android-test) overlapper med MeasurementsViewModels Boolean-funktioner — et godt sted at diskutere DRY/oprydning ved eksamen.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvorfor har I flere ViewModels i appen?",a:`Fordi de har <b>forskellige ansvar</b> og ikke deler data — det er <i>separation of concerns</i>:
+<ul><li>Én holder den globale UI-state (hvilken fane/skærm vises).</li>
+<li>Én styrer købs-/måleflowet.</li>
+<li>Én håndterer valideringslogikken.</li></ul>
+<div class='ourapp'><b>Pointe:</b> ved at adskille dem kan vi ændre fx flowet uden at røre resten — og det gør koden lettere at teste. Du skal kunne forklare princippet, ikke hver enkelt funktion.</div>`},
 
 {cat:"app",type:"Uddyb",q:"Hvad var jeres tre niveauer af kvalitetssikring i app-udviklingen?",a:`<ul><li><b>1) Inputvalidering + unit tests</b> af valideringslogikken (forhindrer fejldata).</li>
 <li><b>2) Code review via pull requests</b> på GitHub (forhindrer fejlkode).</li>
-<li><b>3) Ekstern brugertest</b> af 2. prototype, 5 deltagere (forhindrer fejlløsninger).</li></ul>
+<li><b>3) Ekstern brugertest</b> af 2. prototype (forhindrer fejlløsninger).</li></ul>
 <div class='ourapp'><b>Formel:</b> “validering forhindrer fejldata, code reviews forhindrer fejlkode, og brugertest forhindrer fejlløsninger.”</div>`},
 
-{cat:"app",type:"Kode",q:"Hvad dækker jeres unit test <code>MeasurementViewModelTest</code>, og hvilke input-kategorier testede I?",a:`Den tester alle fire valideringsfunktioner med <code>assertEquals</code>:
-<ul><li>Gyldige værdier i interval (fx "100").</li>
-<li>Eksakte grænseværdier (fx "77" og "113").</li>
-<li>Gyldig værdi med mellemrum som <code>.trim()</code> fanger (" 80 ").</li>
-<li>Ugyldige: under/over interval, negative ("-1"), bogstaver ("Hej"), specialtegn ("//."), og mellemrum <i>inde</i> i tallet ("2 0").</li></ul>
-<div class='ourapp'><b>Pointe:</b> vi tester både happy path, grænser og edge cases — det er stærk testdesign at vise til eksamen.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvad er forskellen på en unit test og en UI-test — og hvad testede I?",a:`<b>Unit test:</b> tester en lille, isoleret enhed (fx valideringslogik) hurtigt uden at starte appen. <b>UI-test (instrumented):</b> kører på en enhed/emulator og tester samspillet i UI'et (klik, navigation, at det rigtige vises).
+<div class='ourapp'><b>I vores app:</b> vi havde unit tests af målvalideringen, og tilføjede senere UI-tests af bl.a. navigation og købsflow. Forstå formålet med hver type — ikke de enkelte testnavne.</div>`},
 
-{cat:"app",type:"Kode",q:"Hvad var jeres post-assignment, og hvilke UI-tests tilføjede I?",a:`Post-assignmentet var at supplere den manglende UI-/instrumented-testdækning (vores erkendte svaghed). Vi tilføjede Compose-UI-tests med <code>createComposeRule()</code>:
-<ul><li><b>navbarDisplaysAllItemsAndTriggersCallbacks</b> — klik på “Udforsk/Bestil/Profil” trigger korrekt Screen-callback.</li>
-<li><b>purchaseFlowSelectionTriggersCorrectFlow</b> — “NEJ” starter videoflow, “JA” starter tekstflow.</li>
-<li><b>homeCarouselToggleColorCallbackIsTriggered</b> — klik på “Switch Color” trigger toggle.</li>
-<li><b>orderStatusBackButtonTriggersCallback</b> — “Gå tilbage” trigger callback.</li>
-<li><b>measurementsDisplaysCorrectData</b> — at titler/værdier vises korrekt.</li></ul>
-<div class='ourapp'><b>Pointe:</b> vi gik fra kun unit-test til også at teste UI-adfærd og navigation.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvad var jeres post-assignment, og hvad forbedrede det?",a:`Post-assignmentet handlede om at dække en erkendt svaghed: vi havde for lidt automatisk testdækning af selve UI'et.
+<div class='ourapp'><b>Forbedring:</b> vi tilføjede UI-tests der tjekker at navigationen, købsflow-valgene og datavisningen opfører sig korrekt — så vi gik fra kun at teste logik til også at teste brugerflowet. Det kobler til vores proces-læring om at teste tidligere.</div>`},
 
-{cat:"app",type:"Kode",q:"Forklar denne UI-test-linje: <code>onNodeWithText(\"NEJ\").performClick(); assertTrue(viewModel.videoFlowOnGoing)</code>.",a:`<ul><li><code>onNodeWithText("NEJ")</code> finder UI-elementet med teksten “NEJ” i den komponerede skærm.</li>
-<li><code>performClick()</code> simulerer et klik.</li>
-<li><code>assertTrue(viewModel.videoFlowOnGoing)</code> bekræfter at klikket satte flow-staten korrekt.</li></ul>
-<div class='ourapp'><b>Hvad det viser:</b> en UI-test verificerer <i>samspillet</i> mellem UI og ViewModel-state — ikke kun ren logik som en unit-test.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvad betyder det at jeres app er en Proof-of-Concept (PoC)?",a:`En PoC demonstrerer at idéen og flowet <b>virker</b> — den er ikke et færdigt, produktionsklart produkt.
+<div class='ourapp'><b>Konsekvens for vores valg:</b> vi prioriterede at vise kerneflowet (måling + køb) og brugte statisk/hardcodet data frem for database og betaling. Bevidst fravalgt: ekstern database/betaling, 3D-visualisering (uden for vores tekniske niveau) og enkelte detaljer fra prototypen. At kunne begrunde afgrænsningerne er vigtigere end at remse dem op.</div>`},
 
-{cat:"app",type:"Uddyb",q:"Hvorfor er jeres app en Proof-of-Concept, og hvad blev ikke implementeret?",a:`En PoC demonstrerer at idéen/flowet virker — ikke et produktionsklart produkt.
-<div class='ourapp'><b>Bevidste afgrænsninger/udeladelser:</b> ingen ekstern database/betaling (Apple Pay uden for scope), 3D-visualisering fravalgt (feasibility), og info-knappen + modal fra prototype 2’s videoflow blev ikke bygget (ingen TimeLine-data eller modalState i FlowViewModel). App'en er en 1:1-oversættelse af prototype 2 til Android Studio.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvordan brugte I GitHub til kvalitetssikring (branching og pull requests)?",a:`<b>Branching:</b> hver opgave/feature blev lavet på sin egen gren i stedet for direkte på hovedkoden. <b>Pull request:</b> en anmodning om at flette grenen ind, som mindst ét andet gruppemedlem reviewede først.
+<div class='ourapp'><b>I vores app:</b> direkte ændringer på main var ikke tilladt — alt gik gennem PR med review. Det fangede fejl tidligt og holdt hovedkoden stabil. Du skal forstå princippet, ikke antal PR'er udenad.</div>`},
 
-{cat:"app",type:"Kode",q:"Hvordan styrer <code>currentStep</code> og <code>currentPage</code> hvilket trin brugeren ser?",a:`<code>currentPage</code> er en <code>mutableStateOf(0)</code>-indeks i listen <code>steps</code>. <code>currentStep</code> er en computed property: <code>get() = steps[currentPage]</code>.
-<ul><li><code>nextFlow()</code>/<code>lastFlow()</code> øger/sænker <code>currentPage</code> → recomposition → ny skærm.</li>
-<li><code>onContinueClicked()</code>: hvis steppet er uden overlay → <code>nextFlow()</code>, ellers åbn overlay.</li></ul>
-<div class='ourapp'><b>Fordel:</b> ét tal (currentPage) er “single source of truth” for hvor i flowet vi er.</div>`},
+{cat:"app",type:"Perspektivér",q:"Hvordan kunne I gøre appens data persistent eller hente den fra et API?",a:`I dag lever data kun i hukommelsen mens appen kører. Muligheder:
+<ul><li><b>Lokalt på enheden:</b> en lokal database (fx Room) eller DataStore.</li>
+<li><b>I skyen:</b> et API hentet via Retrofit, eller en backend som Supabase/Firebase — typisk med asynkron kode (coroutines), så UI'et ikke fryser.</li></ul>
+<div class='ourapp'><b>Kobling:</b> dette svarer direkte på vores arbejdsspørgsmål om datastrukturvalg der understøtter et flertrins-købsflow.</div>`},
 
-{cat:"app",type:"Perspektivér",q:"Jeres måle-data lever kun i FlowViewModel-state og forsvinder ved app-luk. Hvordan ville I gøre dem persistente?",a:`Muligheder:
-<ul><li><b>Lokalt:</b> Room (SQLite-ORM) eller DataStore til at gemme målene på enheden.</li>
-<li><b>Skyen:</b> et REST-API via Retrofit, eller Supabase/Firebase som backend.</li></ul>
-<div class='ourapp'><b>Forankring:</b> i PoC'en er værdierne hardcodede/in-memory (fx <code>var upperCircumference by mutableStateOf("0")</code>). Til et rigtigt køb skulle de bindes til en ordre i en database — hvilket også kobler til vores arbejdsspørgsmål om “datastrukturvalg der understøtter flertrins-flowet”.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvordan oversatte I jeres testede prototype (design) til selve appen?",a:`Appen blev bygget som en tæt oversættelse af den anden, brugertestede Figma-prototype til Android.
+<div class='ourapp'><b>Pointe:</b> design og udvikling hænger sammen — vi byggede det som var valideret med brugere, ikke vores egne antagelser. Enkelte ting nåede ikke med (fx en info-modal og 3D), og det kan vi begrunde med tid/teknisk niveau. Det viser sammenhæng mellem fagene.</div>`},
 
-{cat:"app",type:"Kode",q:"Hvordan virker farve-toggle og den “uendelige” karrusel i NeverAnotherViewModel?",a:`<ul><li><b>Farve:</b> <code>selectColor(color)</code> sætter <code>selectedColor</code> og skifter <code>selectedCarouselPictures</code> til hvid/sort billedliste via et <code>when</code>.</li>
-<li><b>Karrusel:</b> <code>carrouselForwardButtonClick()</code> øger index, men <i>wrapper</i> til 0 når man er på sidste element (og baglæns til sidste fra 0) — så den føles uendelig.</li></ul>
-<div class='ourapp'><b>Pointe:</b> al denne logik ligger i ViewModel (ikke i UI) — så View blot reagerer på state.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvordan ses jeres genre- og stilvalg (design) i appens UI?",a:`Vores stil var minimalistisk, kølig og neutral — fundet via en stilanalyse af konkurrenter.
+<div class='ourapp'><b>I appen:</b> neutral sort/hvid/grå palette med en orange accent, rene produktbilleder (packshots), tydelige CTA-knapper og et SoMe-inspireret swipe-flow. Det funktionelle (navigation, produktvisning) hører til genren; det visuelle udtryk hører til stilen. Forklar koblingen mellem designvalg og det færdige UI.</div>`},
 
-{cat:"app",type:"Uddyb",q:"Hvordan hænger jeres arkitektur (3 fag) sammen i ét projekt?",a:`<div class='ourapp'><b>Den røde tråd:</b>
-<ul><li><b>Projektstyring</b> scopede problemet (udvidet målgruppe) og styrede tid/risiko, så vi nåede en PoC.</li>
-<li><b>Design</b> fandt via Double Diamond at problemet var målgruppe + flow, og leverede den testede prototype 2.</li>
-<li><b>Applikationsudvikling</b> oversatte prototype 2 til en MVVM-app med valideret måleflow, navigation og tests.</li></ul>
-Alt samles i hovedproblemet: optimering af den mobile købsoplevelse for en udvidet målgruppe.</div>`},
+{cat:"app",type:"Uddyb",q:"Hvordan afspejler appens opbygning jeres informationsarkitektur?",a:`Informationsarkitekturen (hvilket indhold findes, og hvordan det er struktureret) blev til appens skærme og navigation.
+<div class='ourapp'><b>I appen:</b> hovedfanerne (Hjem, Udforsk, Min BH/købsflow, Profil) plus After Care/ordrestatus afspejler den struktur vi definerede. Købsflowet er sekventielt (trin-for-trin), mens resten er mere hierarkisk. Forstå at IA ligger til grund for UI'et — ikke omvendt.</div>`},
 
-{cat:"app",type:"Perspektivér",q:"Hvis I skulle videreudvikle app'en fagligt, hvad ville I gøre — og hvilke pensumemner trækker det på?",a:`<div class='ourapp'><ul><li><b>Persistens + backend:</b> Room/Retrofit/Supabase + coroutines (asynkron datahentning).</li>
-<li><b>Bedre måling:</b> <code>Double</code> i stedet for <code>Int</code> + integrér “size guarantee” (designanbefaling).</li>
-<li><b>Fuld testdækning:</b> flere UI-tests af hele navigations-/købsflowet.</li>
-<li><b>Liste-ydeevne:</b> LazyColumn hvis produktkatalog vokser.</li>
-<li><b>Tidligere kundeinddragelse + pre-mortem</b> (projektstyrings-læring).</li></ul></div>`},
+{cat:"app",type:"Uddyb",q:"Hvordan scopede I appen (projektstyring) — hvad var med og uden for scope?",a:`Vi afgrænsede bevidst hvad appen skulle og ikke skulle indeholde, for at nå i mål på tiden.
+<div class='ourapp'><b>Inden for scope:</b> kerneflowet — hjem, udforsk, måle-/købsflow og efterkøb (ordrestatus + after care). <b>Uden for scope:</b> pris/produktion (kan vi ikke påvirke), måleusikkerhed, betaling (fx Apple Pay) og test på en fysisk Android-telefon. At kunne forklare scope-afgrænsningen er klassisk eksamensstof.</div>`},
 
-{cat:"app",type:"Kode",q:"Hvad er <code>data class MeasurementItem(val title, val value, val icon)</code>, og hvorfor adskilt fra <code>InfoItem</code>?",a:`<code>MeasurementItem</code> bruges af <code>YourMeasurement</code> til kropsmål (øvre/nedre bryst, spænd, højde); <code>InfoItem</code> bruges af personlige oplysninger (navn, adresse, email). De har <i>samme</i> struktur (title, value, ImageVector-icon).
-<div class='ourapp'><b>Hvorfor to klasser:</b> for at gøre det <b>tydeligt hvad de bruges til</b> (læsbarhed/semantik), selvom man teknisk kunne genbruge én. Et fint sted at diskutere afvejningen mellem DRY og domæne-klarhed.</div>`},
+{cat:"app",type:"Perspektivér",q:"Hvad var jeres største risiko i projektet, og hvordan påvirkede den app/test?",a:`Vores største risiko var <b>brugertest og rekruttering af testpersoner</b> (svært at finde de rigtige til tiden).
+<div class='ourapp'><b>Konsekvens:</b> det fik os til at inddrage en ekstra testperson i den indledende test for at sikre nok indsigter. Risikoanalyse (sandsynlighed × konsekvens + handling) er projektstyringsmodellen bag — og den fik direkte indflydelse på hvordan vi testede det vi byggede.</div>`},
+
+{cat:"app",type:"Uddyb",q:"Hvad var jeres vigtigste proces-læring (projektstyring) ift. app-udviklingen?",a:`At <b>automatiserede tests og kundeinddragelse kom for sent</b> i forløbet.
+<div class='ourapp'><b>Læring:</b> fremover ville vi teste og inddrage kunden tidligere. Vores egen formulering var at den vigtigste læring var "gruppe- og arkitekturdisciplin, ikke Kotlin-syntaks". At kunne reflektere ærligt over proces vs. produkt vægter til eksamen.</div>`},
+
+{cat:"app",type:"Uddyb",q:"Hvordan hænger de tre fag sammen i jeres ene projekt (den røde tråd)?",a:`<div class='ourapp'><b>Sammenhængen:</b>
+<ul><li><b>Projektstyring</b> scopede problemet (udvidet målgruppe) og styrede tid/risiko.</li>
+<li><b>Design</b> fandt via Double Diamond at problemet både var målgruppe og flow, og leverede en testet prototype.</li>
+<li><b>Applikationsudvikling</b> oversatte prototypen til en MVVM-app med valideret måleflow, navigation og tests.</li></ul>
+Alt samles i hovedproblemet: at optimere den mobile købsoplevelse for en udvidet målgruppe.</div>`},
+
+{cat:"app",type:"Perspektivér",q:"Hvis I skulle videreudvikle appen, hvad ville I gøre — og hvilke fag trækker det på?",a:`<div class='ourapp'><ul><li><b>Persistens + backend</b> (database/API + asynkron kode) — applikationsudvikling.</li>
+<li><b>Bedre måling</b> (decimaltal) + integrér "size guarantee" — designanbefaling.</li>
+<li><b>Mere testdækning</b> af hele flowet — kvalitetssikring.</li>
+<li><b>Tidligere kundeinddragelse</b> og evt. en pre-mortem — projektstyring.</li></ul>
+At binde forbedringer til konkrete pensumemner viser overblik.</div>`},
 
 {cat:"app",type:"Uddyb",q:"Hvordan brugte I AI i projektet — og hvordan afgrænsede I det?",a:`AI blev bevidst <b>begrænset</b>: brugt til rapportstruktur, oversættelse og til at <i>forstå</i> programmeringskoncepter — ikke til at skrive hele kodebasen.
-<div class='ourapp'><b>Dokumenteret:</b> faktiske prompts til Claude (MVVM story-flow med 8 slides, NavController/navbar), Gemini (tekstbanner) og ChatGPT (Compose card-modifiers) samt packshot-generering. Pointen: AI som læringsstøtte, ikke som erstatning for egen forståelse — vigtigt at kunne forklare al kode selv til eksamen.</div>`}
+<div class='ourapp'><b>Pointe:</b> AI som læringsstøtte, ikke som erstatning for egen forståelse. Derfor kan vi forklare al vores kode selv — hvilket er præcis hvad der kræves til eksamen.</div>`}
 
 ];
 
